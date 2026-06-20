@@ -1,0 +1,25 @@
+export const QUARTIERS = [
+  'Tous les quartiers',
+  'Akwa',
+  'Akwa-Nord',
+  'Bali',
+  'Bastos',
+  'Bépanda',
+  'Bonapriso',
+  'Bonanjo',
+  'Cité des Palmiers',
+  'Deido',
+  'Kotto',
+  'Logbessou',
+  'Makepe',
+  'Mboppi',
+  'Ndogbong',
+  'New Bell',
+  'New Deido',
+  'Ndobo',
+  'Nkolndongo',
+  'Oyomabang',
+  'Yassa',
+];
+
+export default QUARTIERS;

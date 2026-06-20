@@ -1,0 +1,13 @@
+src/pages/AdminLocationsPage.tsx(477,72): error TS2322: Type '{ children: Element[]; open: boolean; onClose: () => void; PaperProps: { sx: { borderRadius: string; width: string; maxWidth: number; }; }; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.
+  Property 'PaperProps' does not exist on type 'IntrinsicAttributes & DialogProps'.
+src/pages/AdminLocationsPage.tsx(501,74): error TS2322: Type '{ children: Element[]; open: boolean; onClose: () => void; PaperProps: { sx: { borderRadius: string; width: string; maxWidth: number; }; }; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.
+  Property 'PaperProps' does not exist on type 'IntrinsicAttributes & DialogProps'.
+src/pages/AdminLocationsPage.tsx(527,75): error TS2322: Type '{ children: Element[]; open: boolean; onClose: () => void; PaperProps: { sx: { borderRadius: string; width: string; maxWidth: number; }; }; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.
+  Property 'PaperProps' does not exist on type 'IntrinsicAttributes & DialogProps'.
+src/pages/AdminMailingPage.tsx(204,27): error TS2322: Type '{ fullWidth: true; placeholder: string; size: "small"; InputProps: any; id: string; disabled: boolean; slotProps: { inputLabel: Omit<HTMLAttributes<HTMLLabelElement>, "color">; input: { ...; }; htmlInput: InputHTMLAttributes<...> & { ...; }; }; }' is not assignable to type 'IntrinsicAttributes & { variant?: TextFieldVariants | undefined; } & Omit<OutlinedTextFieldProps | FilledTextFieldProps | StandardTextFieldProps, "variant">'.
+  Property 'InputProps' does not exist on type 'IntrinsicAttributes & { variant?: TextFieldVariants | undefined; } & Omit<OutlinedTextFieldProps | FilledTextFieldProps | StandardTextFieldProps, "variant">'.
+src/pages/AdminMailingPage.tsx(205,39): error TS2339: Property 'InputProps' does not exist on type 'AutocompleteRenderInputParams'.
+src/pages/AdminMailingPage.tsx(211,41): error TS2339: Property 'InputProps' does not exist on type 'AutocompleteRenderInputParams'.
+src/pages/AdminMailingPage.tsx(217,41): error TS2339: Property 'InputProps' does not exist on type 'AutocompleteRenderInputParams'.
+src/pages/AdminMessagesPage.tsx(1803,20): error TS2304: Cannot find name 'showSnackbar'.
+src/pages/AdminMessagesPage.tsx(1837,18): error TS2304: Cannot find name 'showSnackbar'.

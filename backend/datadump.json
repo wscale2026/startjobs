@@ -1,0 +1,1387 @@
+[
+{
+    "model": "sessions.session",
+    "pk": "jzu3oz685grj1p3qyki8wz5d730ievdv",
+    "fields": {
+        "session_data": ".eJxVjbsOwjAQBP_FNYn89pkSiRJRUUdnn0-JIEGKSYX4dwhKAeXuaHafosPl0XdLLXM3kNgLa1hCdNhI41NjwUATM3KDwfnMgJGhiN2vljBfy7S6a6ztl2xlbY8jDrfzfPmgCcdyulO5HTbjb6bH2q__FKJ0kqwm5ZIF5KzBU9Y2GjY-K7JBseHilSWNykcHyRUvMSXSEMTrDdqMQ7g:1wQtTZ:-WMubW_qzYacAWBjtW3jPCm9eydpHGYnSV3GXUSAMVs",
+        "expire_date": "2026-06-06T21:01:41.371Z"
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$nOiB4PXdZGtHH6dOvnG2My$tKLv6hN30cmxZkjFJ6qODQICLN/N9ZKpQ0ptbXp4Iwc=",
+        "last_login": null,
+        "is_superuser": true,
+        "username": "admin",
+        "first_name": "",
+        "last_name": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-05-23T19:05:34.634Z",
+        "email": "hackdumping@gmail.com",
+        "role": "admin",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$FbX1tZRJkAM0PdMTe0Chee$MneoGdr7K9f/wbP95sn5m23puti8UFuRnNw0PkkB0gs=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "eric",
+        "first_name": "Eric",
+        "last_name": "Tchoupe",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-20T20:35:54.286Z",
+        "email": "erictchoupe5@gmail.com",
+        "role": "candidate",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$frqhhMOHVvKBDmrDSK3GEp$aPeiEzK08ed6bbQt8HpgGkafzOivy8n8Ik6SeceV8As=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "jean",
+        "first_name": "jean",
+        "last_name": "jean",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-14T11:48:49.572Z",
+        "email": "jean@gmail.com",
+        "role": "candidate",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$joeDLC1fGdtJeBCwQxtLM1$p/W/q3JW/BHu68Y7lK8lBXsYI9WLiDeP3tfr/bIaSrI=",
+        "last_login": "2026-05-23T21:01:41.347Z",
+        "is_superuser": false,
+        "username": "employeur1",
+        "first_name": "Jean",
+        "last_name": "Dupont",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-05-23T19:05:35.608Z",
+        "email": "emp1@startjobs.com",
+        "role": "employer",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$Or44IBeHZyyOYUjH7or6dp$V6Hy/+F+lOUJzSc2IR1YRLEhEXtFe85TuazCkZvkLks=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "Delta17",
+        "first_name": "Martial",
+        "last_name": "Tuchamo",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-20T20:09:01.366Z",
+        "email": "deltamartial012@gmail.com",
+        "role": "candidate",
+        "is_email_verified": false,
+        "email_verification_token": "ibGsqihDKF0EfQnDiMgl1yA934soyZjMLbdofxqEEnA",
+        "email_token_created_at": "2026-06-20T20:12:37.090Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$mnGkbngI0dArMSDNbJYeRv$4HUa21TTfn8Je+CDrRGD9jXAJLZ994Ri/+BfbYyKBBU=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "test8001",
+        "first_name": "test",
+        "last_name": "test",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-16T20:55:17.181Z",
+        "email": "test8001@a.com",
+        "role": "candidate",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$yhvTO6Nto3ITL6rN0d6YFT$lN7PZZ8xNtQ4f/MXk4us4g2Xf7LKfV3SrA/gPGFefXg=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "testcand99",
+        "first_name": "Test",
+        "last_name": "Cand",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-16T20:55:32.262Z",
+        "email": "test99@test.com",
+        "role": "candidate",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$mjpga9JzXbXvn3U9LJNLDY$OpYvVNQCdUqFbdK2hk1zeoAdXu3CN3sapTa7kExRq+U=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "alimentationcoin",
+        "first_name": "Alimentation du Coin Cameroon",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-05-24T07:03:55.928Z",
+        "email": "alimentationcoin@gmail.com",
+        "role": "employer",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$hWfYe7waE2hlN5ZTvfmQej$pJIyifLVpHFFZ/GnCN+odQ0LXNfeExuAA7fYOpLgKws=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "test_mail",
+        "first_name": "Test",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-17T18:10:30.665Z",
+        "email": "test@mail.com",
+        "role": "candidate",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$8rXPLKokKtQpdb8FBaW0q1$dWeJFu6oHHnNZjrtcWy9t3Di0mmPWGI9LRcUV3FwAVg=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "dumping",
+        "first_name": "Ultimate-Technology",
+        "last_name": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-20T21:59:02.387Z",
+        "email": "dumpingdumping2005@gmail.com",
+        "role": "employer",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$o7XM5PVyBlOipsvReUp4wM$rQsvzuaBOhqjuNII5qNeKGz0fm+mQZ73/Fg1XZMVVGY=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "candidat1",
+        "first_name": "Alice",
+        "last_name": "Martin",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-05-23T19:05:36.973Z",
+        "email": "cand1@startjobs.com",
+        "role": "candidate",
+        "is_email_verified": true,
+        "email_verification_token": null,
+        "email_token_created_at": null,
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1200000$PldzTBD0mlfaQoXNLeSslc$VWwrHs9cAlz6kzvLw3zeR8DlCMuvKbVk/vUHl+6/fQw=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "test_cand_final",
+        "first_name": "Jean",
+        "last_name": "Dupont",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-06-19T07:32:35.972Z",
+        "email": "final@test.com",
+        "role": "candidate",
+        "is_email_verified": false,
+        "email_verification_token": "Yw8whFTKSxtXCZsMOeuT0X6MmDWLgAtiegi4PkyZJGI",
+        "email_token_created_at": "2026-06-19T07:32:35.993Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "users.employerprofile",
+    "pk": 1,
+    "fields": {
+        "user": [
+            "employeur1"
+        ],
+        "company_name": "Tech Corp",
+        "address": "Paris",
+        "phone": null,
+        "verified": true,
+        "verification_requested": false,
+        "generated_password": null,
+        "logo": "",
+        "industry": null,
+        "city": null,
+        "neighborhood": null,
+        "latitude": null,
+        "longitude": null,
+        "recruits_per_month": null,
+        "description": null
+    }
+},
+{
+    "model": "users.employerprofile",
+    "pk": 2,
+    "fields": {
+        "user": [
+            "alimentationcoin"
+        ],
+        "company_name": "Alimentation du Coin Cameroon",
+        "address": null,
+        "phone": "",
+        "verified": false,
+        "verification_requested": false,
+        "generated_password": null,
+        "logo": "",
+        "industry": "",
+        "city": "Douala",
+        "neighborhood": "Akwa",
+        "latitude": null,
+        "longitude": null,
+        "recruits_per_month": "1-2",
+        "description": "Nous vendons les meilleurs produits locaux"
+    }
+},
+{
+    "model": "users.employerprofile",
+    "pk": 3,
+    "fields": {
+        "user": [
+            "dumping"
+        ],
+        "company_name": "Ultimate-Technology ",
+        "address": null,
+        "phone": "654549701",
+        "verified": false,
+        "verification_requested": true,
+        "generated_password": "dumping123",
+        "logo": "",
+        "industry": "Commerce",
+        "city": "Douala",
+        "neighborhood": "Akwa",
+        "latitude": null,
+        "longitude": null,
+        "recruits_per_month": "3-5",
+        "description": null
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 1,
+    "fields": {
+        "name": "Cuisine"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 2,
+    "fields": {
+        "name": "Électricité"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 3,
+    "fields": {
+        "name": "Plomberie"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 4,
+    "fields": {
+        "name": "Coiffure"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 5,
+    "fields": {
+        "name": "Couture"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 6,
+    "fields": {
+        "name": "Sécurité"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 7,
+    "fields": {
+        "name": "Developpement"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 8,
+    "fields": {
+        "name": "Informatique"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 9,
+    "fields": {
+        "name": "Enseignement"
+    }
+},
+{
+    "model": "users.skill",
+    "pk": 10,
+    "fields": {
+        "name": "Maintenance"
+    }
+},
+{
+    "model": "users.language",
+    "pk": 1,
+    "fields": {
+        "name": "Français"
+    }
+},
+{
+    "model": "users.language",
+    "pk": 2,
+    "fields": {
+        "name": "Anglais"
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 1,
+    "fields": {
+        "user": [
+            "candidat1"
+        ],
+        "bio": "Développeuse React",
+        "phone": null,
+        "neighborhood": "Lyon",
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 10.0,
+        "score": 3.5,
+        "generated_password": null,
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 2,
+        "profile_type": "Freelance",
+        "photo": "",
+        "skills": [],
+        "languages": []
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 3,
+    "fields": {
+        "user": [
+            "jean"
+        ],
+        "bio": null,
+        "phone": null,
+        "neighborhood": null,
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 10.0,
+        "score": 0.0,
+        "generated_password": null,
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Freelance",
+        "photo": "",
+        "skills": [],
+        "languages": []
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 5,
+    "fields": {
+        "user": [
+            "test8001"
+        ],
+        "bio": null,
+        "phone": null,
+        "neighborhood": null,
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 10.0,
+        "score": 0.0,
+        "generated_password": null,
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Freelance",
+        "photo": "",
+        "skills": [],
+        "languages": []
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 6,
+    "fields": {
+        "user": [
+            "testcand99"
+        ],
+        "bio": null,
+        "phone": "123456789",
+        "neighborhood": null,
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 10.0,
+        "score": 0.0,
+        "generated_password": "Password123!",
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Freelance",
+        "photo": "",
+        "skills": [],
+        "languages": []
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 9,
+    "fields": {
+        "user": [
+            "test_mail"
+        ],
+        "bio": null,
+        "phone": null,
+        "neighborhood": null,
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 10.0,
+        "score": 0.0,
+        "generated_password": null,
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Freelance",
+        "photo": "",
+        "skills": [],
+        "languages": []
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 12,
+    "fields": {
+        "user": [
+            "test_cand_final"
+        ],
+        "bio": null,
+        "phone": "677777777",
+        "neighborhood": "Yaounde - Bastos",
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 10.0,
+        "score": 0.0,
+        "generated_password": "MonSuperPassword456!",
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Freelance",
+        "photo": "",
+        "skills": [],
+        "languages": []
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 15,
+    "fields": {
+        "user": [
+            "Delta17"
+        ],
+        "bio": "",
+        "phone": "696876932",
+        "neighborhood": "Douala - pk16",
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 5.0,
+        "score": 0.0,
+        "generated_password": "200917",
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Etudiant",
+        "photo": "",
+        "skills": [
+            8
+        ],
+        "languages": [
+            1
+        ]
+    }
+},
+{
+    "model": "users.candidateprofile",
+    "pk": 16,
+    "fields": {
+        "user": [
+            "eric"
+        ],
+        "bio": "Jeune passionné par ce qu’il entreprend et pret a mettre ses connaissances au service d’entreprise innovantes ",
+        "phone": "658630407",
+        "neighborhood": "Douala - pk16",
+        "latitude": null,
+        "longitude": null,
+        "distance_max": 9.0,
+        "score": 0.0,
+        "generated_password": "eric123",
+        "total_missions": 0,
+        "is_available": true,
+        "has_license": false,
+        "profile_views": 0,
+        "profile_type": "Etudiant",
+        "photo": "",
+        "skills": [
+            6,
+            8,
+            9
+        ],
+        "languages": [
+            1,
+            2
+        ]
+    }
+},
+{
+    "model": "users.experience",
+    "pk": 4,
+    "fields": {
+        "candidate": 16,
+        "title": "Enseignant – Remises a niveau ",
+        "employer_name": "Académie des Leaders ",
+        "date": "2025",
+        "exp_type": "declared",
+        "rating": null,
+        "comment": null
+    }
+},
+{
+    "model": "users.sitesettings",
+    "pk": 1,
+    "fields": {
+        "site_name": "StartJobs",
+        "contact_email": "support@startjobs.cm",
+        "maintenance_mode": false,
+        "allow_registrations": true,
+        "require_email_verification": true,
+        "seo_title": "StartJobs - La plateforme des emplois pour jeunes",
+        "seo_description": "Trouvez rapidement des petits boulots et des offres de stage au Cameroun.",
+        "logo": ""
+    }
+},
+{
+    "model": "jobs.sector",
+    "pk": 1,
+    "fields": {
+        "name": "Construction"
+    }
+},
+{
+    "model": "jobs.sector",
+    "pk": 2,
+    "fields": {
+        "name": "Santé"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 2,
+    "fields": {
+        "city": "Yaoundé",
+        "name": "Bastos"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 12,
+    "fields": {
+        "city": "Yaoundé",
+        "name": "Ngoa-Ekélé"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 13,
+    "fields": {
+        "city": "Yaoundé",
+        "name": "Mokolo"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 14,
+    "fields": {
+        "city": "Yaoundé",
+        "name": "Biyem-Assi"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 15,
+    "fields": {
+        "city": "Yaoundé",
+        "name": "Omnisports"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 16,
+    "fields": {
+        "city": "Douala",
+        "name": "Akwa"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 17,
+    "fields": {
+        "city": "Douala",
+        "name": "Bonanjo"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 18,
+    "fields": {
+        "city": "Douala",
+        "name": "Bonapriso"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 19,
+    "fields": {
+        "city": "Douala",
+        "name": "Deido"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 20,
+    "fields": {
+        "city": "Douala",
+        "name": "Makepe"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 21,
+    "fields": {
+        "city": "Douala",
+        "name": "Bonamoussadi"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 22,
+    "fields": {
+        "city": "Douala",
+        "name": "Logpom"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 23,
+    "fields": {
+        "city": "Douala",
+        "name": "Kotto"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 24,
+    "fields": {
+        "city": "Douala",
+        "name": "Bali"
+    }
+},
+{
+    "model": "jobs.neighborhood",
+    "pk": 25,
+    "fields": {
+        "city": "Douala",
+        "name": "pk16"
+    }
+},
+{
+    "model": "jobs.joboffer",
+    "pk": 1,
+    "fields": {
+        "title": "Chantier",
+        "employer": 1,
+        "neighborhood": null,
+        "sector": 1,
+        "description": "Besoin des manoeuvre pour un travail de 5 jous",
+        "start_date": "2026-05-30",
+        "duration": "5 jours",
+        "end_date": null,
+        "budget": "2500fcfa/jours",
+        "is_urgent": true,
+        "contact_whatsapp": "+237690000000",
+        "contact_phone": "+237690000000",
+        "is_ad": false,
+        "ad_url": null,
+        "ad_image_url": null,
+        "created_at": "2026-05-23T22:06:47.635Z",
+        "updated_at": "2026-05-23T22:06:47.635Z",
+        "is_active": true
+    }
+},
+{
+    "model": "jobs.joboffer",
+    "pk": 2,
+    "fields": {
+        "title": "Achat d'ordinateur",
+        "employer": null,
+        "neighborhood": null,
+        "sector": null,
+        "description": "Decouvrer la plateforme d'achat de vos laptops en toute securité",
+        "start_date": null,
+        "duration": null,
+        "end_date": null,
+        "budget": "Publicité",
+        "is_urgent": false,
+        "contact_whatsapp": null,
+        "contact_phone": null,
+        "is_ad": true,
+        "ad_url": "https://ultimate-technology.vercel.app",
+        "ad_image_url": "https://res.cloudinary.com/dxcbksigt/image/upload/v1/logos/logo_page.png",
+        "created_at": "2026-06-16T22:45:41.502Z",
+        "updated_at": "2026-06-20T20:48:32.527Z",
+        "is_active": true
+    }
+},
+{
+    "model": "jobs.application",
+    "pk": 1,
+    "fields": {
+        "candidate": 1,
+        "job_offer": 1,
+        "status": "completed",
+        "is_reviewed": false,
+        "match_score": 0,
+        "created_at": "2026-06-02T19:58:02.546Z",
+        "updated_at": "2026-06-02T22:00:41.942Z"
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 1,
+    "fields": {
+        "created_at": "2026-05-23T19:17:57.601Z",
+        "updated_at": "2026-06-02T22:46:37.372Z",
+        "participants": [
+            [
+                "employeur1"
+            ],
+            [
+                "candidat1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 2,
+    "fields": {
+        "created_at": "2026-06-16T21:24:09.563Z",
+        "updated_at": "2026-06-16T21:24:09.563Z",
+        "participants": [
+            [
+                "employeur1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 3,
+    "fields": {
+        "created_at": "2026-06-16T21:24:20.563Z",
+        "updated_at": "2026-06-16T21:24:20.563Z",
+        "participants": [
+            [
+                "candidat1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 5,
+    "fields": {
+        "created_at": "2026-06-17T15:56:40.764Z",
+        "updated_at": "2026-06-17T15:56:40.764Z",
+        "participants": [
+            [
+                "candidat1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 6,
+    "fields": {
+        "created_at": "2026-06-17T18:52:26.719Z",
+        "updated_at": "2026-06-17T18:52:26.719Z",
+        "participants": [
+            [
+                "employeur1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 7,
+    "fields": {
+        "created_at": "2026-06-17T19:09:56.894Z",
+        "updated_at": "2026-06-17T19:09:57.034Z",
+        "participants": [
+            [
+                "employeur1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 8,
+    "fields": {
+        "created_at": "2026-06-20T21:24:01.863Z",
+        "updated_at": "2026-06-20T21:24:01.863Z",
+        "participants": [
+            [
+                "employeur1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.conversation",
+    "pk": 9,
+    "fields": {
+        "created_at": "2026-06-20T22:53:52.564Z",
+        "updated_at": "2026-06-20T22:53:52.564Z",
+        "participants": [
+            [
+                "employeur1"
+            ]
+        ]
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 1,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": "bonjour",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T19:17:57.704Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 2,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "Comment tu vas ?",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T19:18:26.608Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 3,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "[CONTACT_SHARE: {\"id\":\"43f0895a-036b-4838-9caf-a756cf8a9f8e\", \"name\":\"Jean\", \"role\":\"employer\", \"pic\":\"\"}]",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T19:18:51.648Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 4,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/179760.jpg",
+        "is_audio": false,
+        "created_at": "2026-05-23T20:50:04.432Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 5,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "[CONTACT_SHARE: {\"id\":\"edcdcab8-4e1f-45fb-abbf-dd44f1ce4cd4\", \"name\":\"Alice\", \"role\":\"candidate\", \"pic\":\"\"}]",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T20:50:37.201Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 6,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/test_doc.pdf",
+        "is_audio": false,
+        "created_at": "2026-05-23T21:00:32.053Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 7,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/test.pdf",
+        "is_audio": false,
+        "created_at": "2026-05-23T21:53:08.862Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 8,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/translated.pdf",
+        "is_audio": false,
+        "created_at": "2026-05-23T22:03:33.537Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 9,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/EPREUVE_DINFORMATIQUE_THEORIQUE_-_EXAMEN__PROBATOIRE_SÉRIE__C_D_E_CAMEROUN.pdf",
+        "is_audio": false,
+        "created_at": "2026-05-23T22:04:46.839Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 10,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "Hello",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T22:30:38.975Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 11,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "Hum",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T22:31:11.262Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 12,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "Répond moi stp",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-23T22:31:22.152Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 13,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/voice_message.webm",
+        "is_audio": true,
+        "created_at": "2026-05-26T23:36:18.236Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 14,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": "bonjour",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-31T10:57:18.065Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 15,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "hello",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-31T10:57:55.507Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 16,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": "[CONTACT_SHARE: {\"id\":\"43f0895a-036b-4838-9caf-a756cf8a9f8e\", \"name\":\"Jean\", \"role\":\"employer\", \"pic\":\"\"}]",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-31T10:58:14.471Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 17,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "bonjour monsieur",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-31T11:15:31.723Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 18,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "hello",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-31T11:16:22.502Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 19,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": null,
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "messages/attachments/voice_message_y64B7uK.webm",
+        "is_audio": true,
+        "created_at": "2026-05-31T11:16:56.613Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 20,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": "🔥",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-05-31T11:40:13.178Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 21,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": "bonojour",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-06-02T18:22:11.717Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 22,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "employeur1"
+        ],
+        "text": "Hey",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-06-02T19:57:01.489Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 23,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "Bonjour ! Je souhaite vivement postuler à votre offre \"Chantier\" sur StartJobs. Mon profil candidat est à jour, n'hésitez pas à le consulter. Je reste à votre entière disposition pour un échange.",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-06-02T19:57:27.170Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 24,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "Bonjour ! Je souhaite vivement postuler à votre offre \"Chantier\" sur StartJobs. Mon profil candidat est à jour, n'hésitez pas à le consulter. Je reste à votre entière disposition pour un échange.",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-06-02T19:58:02.774Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 25,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "[CONTACT_SHARE: {\"id\":\"43f0895a-036b-4838-9caf-a756cf8a9f8e\", \"name\":\"Jean\", \"role\":\"employer\", \"pic\":\"\"}]",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-06-02T22:45:10.348Z"
+    }
+},
+{
+    "model": "interactions.message",
+    "pk": 26,
+    "fields": {
+        "conversation": 1,
+        "sender": [
+            "candidat1"
+        ],
+        "text": "[CONTACT_SHARE: {\"id\":\"edcdcab8-4e1f-45fb-abbf-dd44f1ce4cd4\", \"name\":\"Alice\", \"role\":\"candidate\", \"pic\":\"\"}]",
+        "is_read": true,
+        "is_deleted": false,
+        "attachment": "",
+        "is_audio": false,
+        "created_at": "2026-06-02T22:46:37.355Z"
+    }
+},
+{
+    "model": "interactions.review",
+    "pk": 1,
+    "fields": {
+        "reviewer": [
+            "employeur1"
+        ],
+        "reviewee": [
+            "candidat1"
+        ],
+        "job_offer": 1,
+        "rating": 3.7,
+        "comment": "À améliorer sur certains points",
+        "created_at": "2026-06-03T06:05:56.327Z"
+    }
+}
+]

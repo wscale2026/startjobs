@@ -1,0 +1,332 @@
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Grid, alpha, useTheme, Chip, IconButton, Paper, CircularProgress } from '@mui/material';
+import TiltCard from '../components/TiltCard';
+import { motion } from 'framer-motion';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import PeopleIcon from '@mui/icons-material/People';
+import WorkIcon from '@mui/icons-material/Work';
+import OnlinePredictionIcon from '@mui/icons-material/OnlinePrediction';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import api from '../utils/api';
+
+const dataOffersByDay = [
+  { name: 'Lun', offres: 45 },
+  { name: 'Mar', offres: 52 },
+  { name: 'Mer', offres: 38 },
+  { name: 'Jeu', offres: 65 },
+  { name: 'Ven', offres: 48 },
+  { name: 'Sam', offres: 20 },
+  { name: 'Dim', offres: 15 },
+];
+
+const dataSectors = [
+  { name: 'BTP & Construction', value: 45 },
+  { name: 'IT & Digital', value: 30 },
+  { name: 'Vente & Commerce', value: 15 },
+  { name: 'Restauration', value: 10 },
+];
+
+const dataRadar = [
+  { subject: 'BTP', A: 120, B: 110, fullMark: 150 },
+  { subject: 'IT', A: 98, B: 130, fullMark: 150 },
+  { subject: 'Vente', A: 86, B: 130, fullMark: 150 },
+  { subject: 'Resto', A: 99, B: 100, fullMark: 150 },
+  { subject: 'Santé', A: 85, B: 90, fullMark: 150 },
+  { subject: 'Éduc', A: 65, B: 85, fullMark: 150 },
+];
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  const theme = useTheme();
+  if (active && payload && payload.length) {
+    return (
+      <Box sx={{
+        bgcolor: alpha(theme.palette.background.paper, 0.9),
+        backdropFilter: 'blur(16px)',
+        p: 2,
+        borderRadius: '16px',
+        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+        boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.1)}`,
+      }}>
+        <Typography sx={{ fontWeight: 800, mb: 1 }}>{label}</Typography>
+        {payload.map((p: any) => (
+          <Box key={p.name} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: p.color || p.fill }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'capitalize' }}>{p.name}:</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 800 }}>{p.value}</Typography>
+          </Box>
+        ))}
+      </Box>
+    );
+  }
+  return null;
+};
+
+export default function AdminDashboardPage() {
+  const theme = useTheme();
+  
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    api.get('/admin/dashboard/')
+      .then(res => {
+        setStats(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading || !stats) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const kpis = [
+    { title: 'Total Candidats', value: stats.total_candidates.toString(), sub: 'Inscrits sur la plateforme', color: theme.palette.primary.main, icon: <PeopleIcon /> },
+    { title: 'Employeurs Actifs', value: stats.total_employers.toString(), sub: 'Entreprises & Particuliers', color: theme.palette.info.main, icon: <WorkIcon /> },
+    { title: 'Offres d\'emploi totales', value: stats.total_offers.toString(), sub: 'Missions publiées', color: theme.palette.success.main, icon: <DescriptionIcon /> },
+    { title: 'Candidatures', value: stats.total_applications.toString(), sub: 'CV envoyés', color: theme.palette.secondary.main, icon: <CheckCircleIcon /> },
+  ];
+
+  const dataUsers = [
+    { name: 'Candidats', value: stats.total_candidates },
+    { name: 'Employeurs', value: stats.total_employers },
+  ];
+  
+  // Provide fallback for chart data
+  const dataGrowth = stats.chart_data && stats.chart_data.length > 0 ? stats.chart_data : [
+    { date: 'Lun', inscrits: 0 },
+    { date: 'Mar', inscrits: 0 },
+    { date: 'Mer', inscrits: 0 },
+    { date: 'Jeu', inscrits: 0 },
+    { date: 'Ven', inscrits: 0 },
+    { date: 'Sam', inscrits: 0 },
+    { date: 'Dim', inscrits: 0 },
+  ];
+
+  return (
+    <Box sx={{ pb: 6 }}>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.5 }}>
+            Tableau de Bord Pro
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Suivi macroscopique et micro-analytique de la plateforme
+          </Typography>
+        </Box>
+        <Chip label="Mise à jour en direct" color="success" size="small" icon={<OnlinePredictionIcon />} sx={{ fontWeight: 700 }} />
+      </Box>
+
+      {/* Grille dense de KPIs */}
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+        {kpis.map((kpi, i) => (
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={kpi.title}>
+            <Box component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <TiltCard
+                scaleOnHover={1.02}
+                sx={{
+                  p: 2.5,
+                  borderRadius: '20px',
+                  bgcolor: 'background.paper',
+                  border: `1px solid ${alpha(kpi.color, 0.2)}`,
+                  boxShadow: `0 8px 24px ${alpha(kpi.color, 0.08)}`,
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <Box sx={{ position: 'absolute', top: -20, right: -20, opacity: 0.08, transform: 'scale(2.5)', color: kpi.color, pointerEvents: 'none' }}>
+                  {kpi.icon}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: alpha(kpi.color, 0.1), color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {kpi.icon}
+                  </Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {kpi.title}
+                  </Typography>
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', mb: 0.5, letterSpacing: '-0.02em' }}>
+                  {kpi.value}
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: kpi.color, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <TrendingUpIcon fontSize="small" /> {kpi.sub}
+                </Typography>
+              </TiltCard>
+            </Box>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Graphiques Complexes */}
+      <Grid container spacing={3}>
+        {/* Courbe Principale */}
+        <Grid size={{ xs: 12, xl: 8 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Trafic & Inscriptions</Typography>
+                <Typography variant="body2" color="text.secondary">Nouvelles inscriptions vs Utilisateurs actifs</Typography>
+              </Box>
+              <IconButton size="small"><MoreVertIcon /></IconButton>
+            </Box>
+            
+            <ResponsiveContainer width="100%" height="80%">
+              <AreaChart data={dataGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorInscr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0}/>
+                  </linearGradient>
+                  <filter id="shadowInscr" height="200%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor={theme.palette.primary.main} floodOpacity="0.3"/>
+                  </filter>
+                </defs>
+                <XAxis dataKey="date" stroke={theme.palette.text.secondary} tick={{ fontWeight: 700, fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis stroke={theme.palette.text.secondary} tick={{ fontWeight: 700, fontSize: 12 }} axisLine={false} tickLine={false} dx={-10} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={alpha(theme.palette.divider, 0.5)} />
+                <RechartsTooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="inscrits" name="Inscriptions" stroke={theme.palette.primary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorInscr)" style={{ filter: 'url(#shadowInscr)' }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* Volume des offres en Barres */}
+        <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Volume d'offres</Typography>
+                <Typography variant="body2" color="text.secondary">Nouvelles annonces postées par jour</Typography>
+              </Box>
+            </Box>
+            <ResponsiveContainer width="100%" height="75%">
+              <BarChart data={dataOffersByDay} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorOffres" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={theme.palette.success.main} stopOpacity={1}/>
+                    <stop offset="100%" stopColor={theme.palette.success.dark} stopOpacity={0.8}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={alpha(theme.palette.divider, 0.5)} />
+                <XAxis dataKey="name" stroke={theme.palette.text.secondary} tick={{ fontWeight: 700, fontSize: 12 }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis stroke={theme.palette.text.secondary} tick={{ fontWeight: 700, fontSize: 12 }} axisLine={false} tickLine={false} dx={-5} />
+                <RechartsTooltip cursor={{ fill: alpha(theme.palette.divider, 0.3) }} content={<CustomTooltip />} />
+                <Bar dataKey="offres" name="Offres Postées" fill="url(#colorOffres)" radius={[6, 6, 0, 0]} barSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* Radar Chart (Demande vs Offre par domaine) */}
+        <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Activité par Domaine</Typography>
+              <Typography variant="body2" color="text.secondary">Candidats vs Offres d'emploi</Typography>
+            </Box>
+            <ResponsiveContainer width="100%" height="80%">
+              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataRadar}>
+                <PolarGrid stroke={alpha(theme.palette.divider, 0.8)} />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: theme.palette.text.secondary, fontSize: 12, fontWeight: 700 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
+                <Radar name="Candidats (Demande)" dataKey="A" stroke={theme.palette.primary.main} fill={theme.palette.primary.main} fillOpacity={0.5} />
+                <Radar name="Offres (Offre)" dataKey="B" stroke={theme.palette.warning.main} fill={theme.palette.warning.main} fillOpacity={0.5} />
+                <RechartsTooltip content={<CustomTooltip />} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+
+        {/* Donut Chart Secteurs */}
+        <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Répartition des Secteurs</Typography>
+              <Typography variant="body2" color="text.secondary">Volume d'offres par catégorie</Typography>
+            </Box>
+            
+            <ResponsiveContainer width="100%" height="60%">
+              <PieChart>
+                <defs>
+                  <filter id="pieShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.15"/>
+                  </filter>
+                </defs>
+                <Pie data={dataSectors} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none" style={{ filter: 'url(#pieShadow)' }}>
+                  {dataSectors.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+              {dataSectors.slice(0, 3).map((s, i) => (
+                <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: '4px', bgcolor: COLORS[i % COLORS.length] }} />
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{s.name}</Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 900 }}>{s.value}%</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Donut Chart Utilisateurs */}
+        <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Répartition Utilisateurs</Typography>
+              <Typography variant="body2" color="text.secondary">Candidats vs Employeurs</Typography>
+            </Box>
+            
+            <ResponsiveContainer width="100%" height="60%">
+              <PieChart>
+                <defs>
+                  <filter id="pieShadow2" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.15"/>
+                  </filter>
+                </defs>
+                <Pie data={dataUsers} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none" style={{ filter: 'url(#pieShadow2)' }}>
+                  {dataUsers.map((entry, index) => (
+                    <Cell key={`cell-user-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+              {dataUsers.map((s, i) => (
+                <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: '4px', bgcolor: COLORS[(i + 2) % COLORS.length] }} />
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{s.name}</Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 900 }}>{s.value}%</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+
+      </Grid>
+    </Box>
+  );
+}
