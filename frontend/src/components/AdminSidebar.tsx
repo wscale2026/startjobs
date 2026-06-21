@@ -152,8 +152,8 @@ export default function AdminSidebar({ open, onClose }: { open: boolean, onClose
                 );
               })}
             </Box>
-          </Box>
-        ))}
+          );
+        })}
       </List>
 
       <Box sx={{ p: 2 }}>
