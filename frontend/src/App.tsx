@@ -41,11 +41,9 @@ const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'));
 const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage'));
 const AdminMailingPage = lazy(() => import('./pages/AdminMailingPage'));
 
-const Loader = () => (
-  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-    <CircularProgress />
-  </Box>
-);
+import PageLoader from './components/PageLoader';
+
+const Loader = () => <PageLoader text="Chargement de l'application..." />;
 
 export default function App() {
   const dispatch = useAppDispatch();

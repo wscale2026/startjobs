@@ -14,6 +14,7 @@ import { useAppSelector, useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { MOCK_WORKERS } from '../mocks/workers';
 import api from '../utils/api';
+import PageLoader from '../components/PageLoader';
 
 let cachedRawCandidates: any[] | null = null;
 let cachedAdsSearch: any[] | null = null;
@@ -25,6 +26,7 @@ export default function SearchPage() {
   const globalQuartier = useAppSelector((s) => s.location.quartier);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(!cachedRawCandidates);
 
   const userQuartier = useAppSelector((s) => s.location.quartier);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -130,6 +132,9 @@ export default function SearchPage() {
         .catch((err) => {
           console.error('Error fetching candidates:', err);
           setCandidates(MOCK_WORKERS);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     }
   }, [theme, userQuartier]);
@@ -167,6 +172,10 @@ export default function SearchPage() {
       return 0;
     });
   }, [candidates, query, domaine, typeProfil, disponible, rayon, globalQuartier, userCoords]);
+
+  if (isLoading) {
+    return <PageLoader text="Recherche des meilleurs profils..." />;
+  }
 
   return (
     <Box>

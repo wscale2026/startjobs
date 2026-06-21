@@ -13,6 +13,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { useNavigate } from 'react-router-dom';
 import OfferCard from '../components/OfferCard';
 import AdCard from '../components/AdCard';
+import PageLoader from '../components/PageLoader';
 import { useAppSelector, useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { fetchOffers, deleteOffer } from '../store/slices/offersSlice';
@@ -173,6 +174,10 @@ export default function OffersPage() {
     );
   };
 
+
+  if (offersStatus === 'loading') {
+    return <PageLoader text="Recherche des offres disponibles..." />;
+  }
 
   return (
     <Box>
