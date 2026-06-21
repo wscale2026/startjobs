@@ -38,6 +38,9 @@ import { useAppSelector, useAppDispatch } from '../store';
 import { setUnreadCount, sendMessage as sendMessageAction, markAsRead, deleteMessage, bulkDeleteMessages, deleteConversation } from '../store/slices/messagesSlice';
 import api from '../utils/api';
 import { showSnackbar } from '../store/slices/snackbarSlice';
+import PageLoader from '../components/PageLoader';
+
+let cachedConversations: Conversation[] | null = null;
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type MessageStatus = 'sent' | 'delivered' | 'read';
@@ -1242,7 +1245,23 @@ export default function MessagesPage() {
       }
     };
     
-    loadData();
+    if (cachedConversations) {
+      setConversations(cachedConversations);
+      setLoading(false);
+      const totalUnread = cachedConversations.reduce((sum: number, c: Conversation) => sum + c.unread, 0);
+      dispatch(setUnreadCount(totalUnread));
+      if (isDesktop && cachedConversations.length > 0 && !activeId) {
+        setActiveId(cachedConversations[0].id);
+      }
+      // Still fetch in background to get new messages
+      loadData().then(() => {
+         cachedConversations = conversations;
+      });
+    } else {
+      loadData().then(() => {
+         // cache will be updated by the next render loop or directly inside loadData
+      });
+    }
   }, [currentUser, authStatus, isDesktop, dispatch]);
 
   const handleReplyMessage = () => {
@@ -1409,7 +1428,12 @@ export default function MessagesPage() {
                 });
               }
             });
-            return hasChanges ? newConvos : prev;
+            if (hasChanges) {
+              cachedConversations = newConvos;
+              return newConvos;
+            }
+            cachedConversations = prev;
+            return prev;
           });
         })
         .catch(console.error);
@@ -1907,6 +1931,10 @@ export default function MessagesPage() {
   const SIDEBAR_W = 360;
   const showList = isDesktop || !activeId;
   const showChat = isDesktop || !!activeId;
+
+  if (loading && conversations.length === 0) {
+    return <PageLoader text="Chargement de vos messages..." />;
+  }
 
   return (
     <Box
