@@ -49,7 +49,7 @@ const Loader = () => (
 
 export default function App() {
   const dispatch = useAppDispatch();
-  const { site_name, seo_description, seo_keywords } = useAppSelector((state: any) => state.siteSettings);
+  const { site_name, seo_description, seo_keywords, logo } = useAppSelector((state: any) => state.siteSettings);
 
   useEffect(() => {
     dispatch(fetchPublicSettings());
@@ -62,6 +62,16 @@ export default function App() {
   // Apply SEO settings globally
   useEffect(() => {
     if (site_name) document.title = site_name;
+    
+    if (logo) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = logo;
+    }
     
     if (seo_description) {
       let metaDesc = document.querySelector('meta[name="description"]');
@@ -82,7 +92,7 @@ export default function App() {
       }
       metaKeywords.setAttribute('content', seo_keywords);
     }
-  }, [site_name, seo_description, seo_keywords]);
+  }, [site_name, seo_description, seo_keywords, logo]);
 
   return (
     <BrowserRouter>
