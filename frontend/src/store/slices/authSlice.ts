@@ -89,8 +89,8 @@ export const login = createAsyncThunk('auth/login', async (credentials: any, { r
     // 2. Fetch user profile
     const userRes = await api.get('users/me/');
     const user = userRes.data;
-    if (user.is_superuser || user.is_staff) {
-      user.role = 'admin';
+    if (!user.role && (user.is_superuser || user.is_staff)) {
+      user.role = 'admin'; // Fallback just in case
     }
     return user;
   } catch (error: any) {
@@ -138,8 +138,8 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
     // 3. Fetch profile
     const userRes = await api.get('users/me/');
     const user = userRes.data;
-    if (user.is_superuser || user.is_staff) {
-      user.role = 'admin';
+    if (!user.role && (user.is_superuser || user.is_staff)) {
+      user.role = 'admin'; // Fallback just in case
     }
     return user;
   } catch (error: any) {
@@ -155,8 +155,8 @@ export const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async 
   if (!localStorage.getItem('access_token')) throw new Error('No token');
   const response = await api.get('users/me/');
   const user = response.data;
-  if (user.is_superuser || user.is_staff) {
-    user.role = 'admin';
+  if (!user.role && (user.is_superuser || user.is_staff)) {
+    user.role = 'admin'; // Fallback just in case
   }
   return user;
 });

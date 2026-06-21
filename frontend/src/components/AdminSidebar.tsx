@@ -100,9 +100,9 @@ export default function AdminSidebar({ open, onClose }: { open: boolean, onClose
               return ['/admin', '/admin/offers', '/admin/messages'].includes(item.path);
             }
             
-            // L'admin classique voit tout SAUF la configuration du site et la gestion des administrateurs (Utilisateurs)
+            // L'admin classique voit tout SAUF la configuration du site
             if (role === 'admin') {
-              return !['/admin/settings', '/admin/users'].includes(item.path);
+              return !['/admin/settings'].includes(item.path);
             }
             
             return false;
