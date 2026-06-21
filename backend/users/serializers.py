@@ -152,7 +152,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 user.is_superuser = True
             user.save()
             from .models import AdminProfile
-            AdminProfile.objects.create(user=user)
+            AdminProfile.objects.create(user=user, generated_password=raw_password)
             
         return user
 

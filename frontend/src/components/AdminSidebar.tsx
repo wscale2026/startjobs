@@ -59,6 +59,7 @@ export default function AdminSidebar({ open, onClose }: { open: boolean, onClose
   const dispatch = useAppDispatch();
   const unreadCount = useAppSelector((state: any) => state.messages.unreadCount);
   const { site_name, logo } = useAppSelector((state: any) => state.siteSettings);
+  const authRole = useAppSelector((state: any) => state.auth.role);
 
   const [logoutOpen, setLogoutOpen] = React.useState(false);
 
@@ -88,13 +89,34 @@ export default function AdminSidebar({ open, onClose }: { open: boolean, onClose
       </Box>
 
       <List sx={{ px: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-        {MENU_CATEGORIES.map((category) => (
-          <Box key={category.title}>
-            <Typography variant="overline" className="sidebar-category" sx={{ px: 2, color: 'text.secondary', fontWeight: 800, letterSpacing: '0.1em', whiteSpace: 'nowrap', transition: 'all 0.25s' }}>
-              {category.title}
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
-              {category.items.map((item) => {
+        {MENU_CATEGORIES.map((category) => {
+          // Filtrer les items selon le rôle
+          const filteredItems = category.items.filter(item => {
+            const role = authRole || 'admin';
+            if (role === 'super_admin') return true; // Super admin voit tout
+            
+            if (role === 'moderator') {
+              // Modérateur ne voit que Dashboard, Offres, et Messages
+              return ['/admin', '/admin/offers', '/admin/messages'].includes(item.path);
+            }
+            
+            // L'admin classique voit tout SAUF la configuration du site et la gestion des administrateurs (Utilisateurs)
+            if (role === 'admin') {
+              return !['/admin/settings', '/admin/users'].includes(item.path);
+            }
+            
+            return false;
+          });
+
+          if (filteredItems.length === 0) return null;
+
+          return (
+            <Box key={category.title}>
+              <Typography variant="overline" className="sidebar-category" sx={{ px: 2, color: 'text.secondary', fontWeight: 800, letterSpacing: '0.1em', whiteSpace: 'nowrap', transition: 'all 0.25s' }}>
+                {category.title}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
+                {filteredItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <ListItem
