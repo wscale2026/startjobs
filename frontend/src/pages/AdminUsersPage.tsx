@@ -71,7 +71,7 @@ export default function AdminUsersPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [toggleBadgeUser, setToggleBadgeUser] = useState<any>(null);
   const [isTogglingBadge, setIsTogglingBadge] = useState(false);
-  
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
         let profile = u.candidate_profile;
         if (u.role === 'employer') profile = u.employer_profile;
         if (['admin', 'super_admin', 'moderator'].includes(u.role)) profile = u.admin_profile;
-        
+
         return {
           id: String(u.id),
           nom: [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.username,
@@ -109,10 +109,10 @@ export default function AdminUsersPage() {
           verificationRequested: profile?.verification_requested || false
         };
       });
-      
+
       // Sort users by registration date (newest first)
       formatted.sort((a: any, b: any) => b.rawDate.getTime() - a.rawDate.getTime());
-      
+
       setAllUsers(formatted);
     } catch (err) {
       dispatch(showSnackbar({ message: 'Erreur lors du chargement des utilisateurs', severity: 'error' }));
@@ -151,7 +151,7 @@ export default function AdminUsersPage() {
       });
       const newUserId = res.data.id;
       // Save profile details using the admin endpoint
-      await api.patch(`admin/update-user/${newUserId}/`, { 
+      await api.patch(`admin/update-user/${newUserId}/`, {
         profile: {
           generated_password: candForm.password,
           phone: candForm.phone,
@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
           quartier: candForm.quartier
         }
       });
-      
+
       const newUser = {
         id: String(newUserId),
         nom: `${candForm.prenom} ${candForm.nom}`,
@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
           generated_password: candForm.password || undefined // Only update if a new one is set
         }
       });
-      
+
       dispatch(showSnackbar({ message: 'Candidat modifié avec succès', severity: 'success' }));
       setEditCandidateOpen(false);
       fetchUsers();
@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
           generated_password: adminForm.password || undefined
         }
       });
-      
+
       dispatch(showSnackbar({ message: 'Administrateur modifié avec succès', severity: 'success' }));
       setEditAdminOpen(false);
       fetchUsers();
@@ -266,20 +266,20 @@ export default function AdminUsersPage() {
       dispatch(showSnackbar({ message: 'Aucun numéro de téléphone pour cet utilisateur.', severity: 'warning' }));
       return;
     }
-    
+
     const isAdmin = ['admin', 'super_admin', 'moderator'].includes(user.role);
     let roleDisplay = "Administrateur";
     if (user.role === 'super_admin') roleDisplay = "Super Administrateur";
     if (user.role === 'moderator') roleDisplay = "Modérateur";
-    
-    const message = isAdmin 
+
+    const message = isAdmin
       ? `Bonjour ${user.nom}, \n\nVotre accès ${roleDisplay} a été créé ou réinitialisé avec succès par l'administration. Voici vos identifiants pour vous connecter au back-office :\n\nE-mail : ${user.email}\nMot de passe : ${user.generatedPassword || '(Modifiez votre mot de passe à la première connexion)'}\n\nÀ très bientôt !`
-      : `Bienvenue sur StartJobs\n«Trouver un travail Facilement dans les villes de Douala et Yaoundé»\nVous êtes bien enregistré, utilisez vos identifiants pour vous connecter \nNom d'utilisateur : ${user.username}\nMot de passe : ${user.generatedPassword || '****'}\n\nLiens de connexion : ${window.location.origin}/login`;
-    
+      : `Bienvenue sur StartJobs\n«Trouver un travail Facilement dans les villes de Douala et Yaoundé»\n\nVous êtes bien enregistré, utilisez vos identifiants pour vous connecter\n\nNom d'utilisateur : ${user.username}\nMot de passe : ${user.generatedPassword || '****'}\n\nLiens de connexion : ${window.location.origin}/login`;
+
     // Nettoyer le numéro
     let phoneStr = user.phone.replace(/[^0-9]/g, '');
     if (phoneStr.length === 9) phoneStr = '237' + phoneStr;
-    
+
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -358,7 +358,7 @@ export default function AdminUsersPage() {
     const nomStr = (u.nom || '').toLowerCase();
     const emailStr = (u.email || '').toLowerCase();
     const phoneStr = u.phone || '';
-    
+
     return roleMatch && (nomStr.includes(s) || emailStr.includes(s) || phoneStr.includes(search));
   });
 
@@ -400,13 +400,13 @@ export default function AdminUsersPage() {
       </Box>
 
       <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', gap: 3 }}>
-        <Tabs 
-          value={tabIndex} 
+        <Tabs
+          value={tabIndex}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
           allowScrollButtonsMobile
-          sx={{ 
+          sx={{
             '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' },
             '& .MuiTab-root': { fontWeight: 700, textTransform: 'none', fontSize: '1.05rem', minWidth: 120 }
           }}
@@ -428,24 +428,24 @@ export default function AdminUsersPage() {
 
       <Paper sx={{ borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}`, overflow: 'hidden' }}>
         <TableContainer sx={{ overflowX: 'auto' }}>
-        <Table>
-          <TableHead sx={{ bgcolor: alpha(theme.palette.divider, 0.5) }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Utilisateur</TableCell>
-              {isCandidateTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Nom d'utilisateur</TableCell>}
-              <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Téléphone</TableCell>
-              {isEmployerTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Offres postées</TableCell>}
-              {tabIndex === 2 && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Rôle</TableCell>}
-              <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Date d'inscription</TableCell>
-              <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Activité</TableCell>
-              <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Statut</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+          <Table>
+            <TableHead sx={{ bgcolor: alpha(theme.palette.divider, 0.5) }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Utilisateur</TableCell>
+                {isCandidateTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Nom d'utilisateur</TableCell>}
+                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Téléphone</TableCell>
+                {isEmployerTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Offres postées</TableCell>}
+                {tabIndex === 2 && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Rôle</TableCell>}
+                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Date d'inscription</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Activité</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Statut</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {paginatedUsers.map((row) => (
-                <TableRow 
-                  key={row.id} 
+                <TableRow
+                  key={row.id}
                   component={motion.tr}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -463,7 +463,7 @@ export default function AdminUsersPage() {
                       </Box>
                     </Box>
                   </TableCell>
-                  
+
                   {isCandidateTab && (
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -475,21 +475,21 @@ export default function AdminUsersPage() {
                     </TableCell>
                   )}
                   <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{row.phone || '—'}</TableCell>
-                  
+
                   {isEmployerTab && (
                     <TableCell>
                       <Chip label={`${row.offresTotal} offres`} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700, borderRadius: '6px' }} />
                     </TableCell>
                   )}
-                  
+
                   {tabIndex === 2 && (
                     <TableCell>
-                      <Chip 
-                        label={row.role === 'super_admin' ? 'Super Admin' : row.role === 'admin' ? 'Administrateur' : 'Modérateur'} 
-                        size="small" 
-                        color={row.role === 'super_admin' ? 'error' : row.role === 'admin' ? 'primary' : 'warning'} 
-                        variant="outlined" 
-                        sx={{ fontWeight: 700, borderRadius: '6px' }} 
+                      <Chip
+                        label={row.role === 'super_admin' ? 'Super Admin' : row.role === 'admin' ? 'Administrateur' : 'Modérateur'}
+                        size="small"
+                        color={row.role === 'super_admin' ? 'error' : row.role === 'admin' ? 'primary' : 'warning'}
+                        variant="outlined"
+                        sx={{ fontWeight: 700, borderRadius: '6px' }}
                       />
                     </TableCell>
                   )}
@@ -505,21 +505,21 @@ export default function AdminUsersPage() {
                   </TableCell>
                   <TableCell>
                     {row.role === 'employer' && row.verificationRequested ? (
-                      <Chip 
-                        size="small" 
-                        label="Demande Badge" 
-                        color="warning" 
-                        variant="filled" 
-                        sx={{ fontWeight: 700, borderRadius: '8px' }} 
+                      <Chip
+                        size="small"
+                        label="Demande Badge"
+                        color="warning"
+                        variant="filled"
+                        sx={{ fontWeight: 700, borderRadius: '8px' }}
                       />
                     ) : (
-                      <Chip 
-                        size="small" 
-                        label={row.statut} 
+                      <Chip
+                        size="small"
+                        label={row.statut}
                         icon={row.statut === 'Vérifié' || row.statut === 'Actif' ? <CheckCircleIcon /> : <CancelIcon />}
-                        color={row.statut === 'Actif' || row.statut === 'Vérifié' ? 'success' : 'default'} 
-                        variant={row.statut === 'Actif' || row.statut === 'Vérifié' ? 'filled' : 'outlined'} 
-                        sx={{ fontWeight: 700, borderRadius: '8px' }} 
+                        color={row.statut === 'Actif' || row.statut === 'Vérifié' ? 'success' : 'default'}
+                        variant={row.statut === 'Actif' || row.statut === 'Vérifié' ? 'filled' : 'outlined'}
+                        sx={{ fontWeight: 700, borderRadius: '8px' }}
                       />
                     )}
                   </TableCell>
@@ -531,30 +531,30 @@ export default function AdminUsersPage() {
                 </TableRow>
               ))}
               {filteredUsers.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                  <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>Aucun utilisateur trouvé.</Typography>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={filteredUsers.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={(e, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-        labelRowsPerPage="Utilisateurs par page:"
-      />
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>Aucun utilisateur trouvé.</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredUsers.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+          labelRowsPerPage="Utilisateurs par page:"
+        />
       </Paper>
 
       {/* Dialog Profil Utilisateur */}
-      <Dialog 
-        open={!!selectedUser} 
+      <Dialog
+        open={!!selectedUser}
         onClose={() => setSelectedUser(null)}
         maxWidth="sm"
         fullWidth
@@ -630,9 +630,9 @@ export default function AdminUsersPage() {
                               <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Nom d'utilisateur: {selectedUser.username}</Typography>
                               <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Mot de passe: {selectedUser.generatedPassword || '••••••••'}</Typography>
                             </Box>
-                            <IconButton 
-                              size="small" 
-                              color="secondary" 
+                            <IconButton
+                              size="small"
+                              color="secondary"
                               onClick={() => copyCredentials(selectedUser.username, selectedUser.generatedPassword || '')}
                             >
                               <ContentCopyIcon fontSize="small" />
@@ -655,7 +655,7 @@ export default function AdminUsersPage() {
                         {selectedUser.statut === 'Vérifié' && <VerifiedIcon sx={{ color: 'secondary.main', fontSize: 18 }} />}
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <PlaceIcon sx={{ fontSize: 16 }} /> 
+                        <PlaceIcon sx={{ fontSize: 16 }} />
                         {selectedUser.city ? `${selectedUser.city}${selectedUser.neighborhood ? ` · ${selectedUser.neighborhood}` : ''}` : 'Localisation non renseignée'}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -666,10 +666,10 @@ export default function AdminUsersPage() {
                         <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: alpha(theme.palette.warning.main, 0.1), border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}` }}>
                           <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.dark', mb: 1 }}>Cet employeur a demandé le badge Vérifié</Typography>
                           <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button 
-                              size="small" 
-                              variant="contained" 
-                              color="success" 
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
                               sx={{ fontWeight: 700, textTransform: 'none', borderRadius: '6px' }}
                               onClick={async () => {
                                 try {
@@ -686,9 +686,9 @@ export default function AdminUsersPage() {
                             >
                               Accorder
                             </Button>
-                            <Button 
-                              size="small" 
-                              variant="outlined" 
+                            <Button
+                              size="small"
+                              variant="outlined"
                               color="error"
                               sx={{ fontWeight: 700, textTransform: 'none', borderRadius: '6px' }}
                               onClick={async () => {
@@ -742,7 +742,7 @@ export default function AdminUsersPage() {
                       </Box>
                     </Stack>
                   </Paper>
-                  
+
                   {selectedUser.username && (
                     <Paper variant="outlined" sx={{ p: 2, mt: 3, borderRadius: '12px', bgcolor: alpha(theme.palette.secondary.main, 0.05), border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}` }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -751,9 +751,9 @@ export default function AdminUsersPage() {
                           <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Nom d'utilisateur: {selectedUser.username}</Typography>
                           <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Mot de passe: {selectedUser.generatedPassword || '••••••••'}</Typography>
                         </Box>
-                        <IconButton 
-                          size="small" 
-                          color="secondary" 
+                        <IconButton
+                          size="small"
+                          color="secondary"
                           onClick={() => copyCredentials(selectedUser.username, selectedUser.generatedPassword || '')}
                         >
                           <ContentCopyIcon fontSize="small" />
@@ -770,11 +770,11 @@ export default function AdminUsersPage() {
                     </Avatar>
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>{selectedUser.nom}</Typography>
-                      <Chip 
-                        label={selectedUser.role === 'super_admin' ? 'Super Admin' : selectedUser.role === 'admin' ? 'Administrateur' : 'Modérateur'} 
-                        size="small" 
-                        color={selectedUser.role === 'super_admin' ? 'error' : selectedUser.role === 'admin' ? 'primary' : 'warning'} 
-                        sx={{ fontWeight: 700, borderRadius: '6px' }} 
+                      <Chip
+                        label={selectedUser.role === 'super_admin' ? 'Super Admin' : selectedUser.role === 'admin' ? 'Administrateur' : 'Modérateur'}
+                        size="small"
+                        color={selectedUser.role === 'super_admin' ? 'error' : selectedUser.role === 'admin' ? 'primary' : 'warning'}
+                        sx={{ fontWeight: 700, borderRadius: '6px' }}
                       />
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                         Membre de l'équipe de gestion depuis le {selectedUser.date}.
@@ -796,9 +796,9 @@ export default function AdminUsersPage() {
                           <Typography variant="body2" color="text.secondary">Mot de passe temporaire</Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace' }}>{selectedUser.generatedPassword}</Typography>
-                            <IconButton 
-                              size="small" 
-                              color="secondary" 
+                            <IconButton
+                              size="small"
+                              color="secondary"
                               onClick={() => copyCredentials(selectedUser.username, selectedUser.generatedPassword || '')}
                             >
                               <ContentCopyIcon fontSize="small" />
@@ -812,7 +812,7 @@ export default function AdminUsersPage() {
               )}
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-              <Button 
+              <Button
                 onClick={async () => {
                   if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${selectedUser?.nom} ? Cette action est irréversible.`)) {
                     try {
@@ -824,9 +824,9 @@ export default function AdminUsersPage() {
                       dispatch(showSnackbar({ message: 'Erreur lors de la suppression de l\'utilisateur.', severity: 'error' }));
                     }
                   }
-                }} 
-                variant="outlined" 
-                color="error" 
+                }}
+                variant="outlined"
+                color="error"
                 sx={{ borderRadius: '12px', fontWeight: 700 }}
               >
                 Supprimer
@@ -835,7 +835,7 @@ export default function AdminUsersPage() {
               <Button onClick={() => setSelectedUser(null)} variant="outlined" color="inherit" sx={{ borderRadius: '12px', fontWeight: 700 }}>
                 Fermer
               </Button>
-              <Button 
+              <Button
                 onClick={async () => {
                   const targetUserId = selectedUser.id;
                   setSelectedUser(null);
@@ -845,8 +845,8 @@ export default function AdminUsersPage() {
                   } catch (err) {
                     dispatch(showSnackbar({ message: 'Erreur lors du démarrage de la discussion', severity: 'error' }));
                   }
-                }} 
-                variant="contained" 
+                }}
+                variant="contained"
                 startIcon={<ChatIcon />}
                 sx={{ borderRadius: '12px', fontWeight: 700, boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}` }}
               >
@@ -972,16 +972,18 @@ export default function AdminUsersPage() {
                 value={adminForm.password}
                 onChange={e => setAdminForm({ ...adminForm, password: e.target.value })}
                 helperText="L'administrateur devra changer ce mot de passe à sa première connexion."
-                slotProps={{ input: {
-                  startAdornment: <InputAdornment position="start"><LockIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setShowPassword(!showPassword)} edge="end">
-                        {showPassword ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
-                      </IconButton>
-                    </InputAdornment>
-                  )
-                } }}
+                slotProps={{
+                  input: {
+                    startAdornment: <InputAdornment position="start"><LockIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setShowPassword(!showPassword)} edge="end">
+                          {showPassword ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
               />
             </Grid>
@@ -1024,7 +1026,7 @@ export default function AdminUsersPage() {
                 // Determine username from email or name
                 const baseUsername = adminForm.email.split('@')[0] || adminForm.nom.split(' ')[0].toLowerCase();
                 const username = baseUsername.replace(/[^a-zA-Z0-9]/g, '') + Math.floor(Math.random() * 1000);
-                
+
                 const res = await api.post('register/', {
                   username: username,
                   email: adminForm.email,
@@ -1033,15 +1035,15 @@ export default function AdminUsersPage() {
                   last_name: adminForm.nom.split(' ').slice(1).join(' ') || '',
                   role: adminForm.role,
                 });
-                
+
                 const newUserId = res.data.id;
-                await api.patch(`admin/update-user/${newUserId}/`, { 
+                await api.patch(`admin/update-user/${newUserId}/`, {
                   profile: {
                     generated_password: adminForm.password,
                     phone: adminForm.phone
                   }
                 });
-                
+
                 const newAdmin = {
                   id: String(newUserId),
                   nom: adminForm.nom,
@@ -1056,7 +1058,7 @@ export default function AdminUsersPage() {
                   username: username,
                   generatedPassword: adminForm.password,
                 };
-                
+
                 setAllUsers(prev => [...prev, newAdmin]);
                 setCreatedCredentials({ username, password: adminForm.password });
                 setAddAdminOpen(false);
@@ -1491,8 +1493,8 @@ export default function AdminUsersPage() {
           Voir le profil
         </MenuItem>
         {menuUser && menuUser.role === 'candidate' && (
-          <MenuItem onClick={() => { 
-            handleMenuClose(); 
+          <MenuItem onClick={() => {
+            handleMenuClose();
             const parts = menuUser.nom.split(' ');
             let v = '';
             let q = '';
@@ -1511,7 +1513,7 @@ export default function AdminUsersPage() {
               prenom: parts.slice(1).join(' ') || '',
               email: menuUser.email || '',
               phone: menuUser.phone || '',
-              dateNaissance: '', 
+              dateNaissance: '',
               ville: v,
               quartier: q,
               typeProfil: 'Freelance',
@@ -1525,7 +1527,7 @@ export default function AdminUsersPage() {
             Modifier le candidat
           </MenuItem>
         )}
-        
+
         {menuUser && menuUser.role === 'employer' && (
           <MenuItem onClick={() => { handleMenuClose(); setToggleBadgeUser(menuUser); }}>
             {menuUser.statut === 'Vérifié' ? (
@@ -1536,10 +1538,10 @@ export default function AdminUsersPage() {
             {menuUser.statut === 'Vérifié' ? 'Désactiver le badge' : 'Activer le badge'}
           </MenuItem>
         )}
-        
+
         {menuUser && ['admin', 'super_admin', 'moderator'].includes(menuUser.role) && (
-          <MenuItem onClick={() => { 
-            handleMenuClose(); 
+          <MenuItem onClick={() => {
+            handleMenuClose();
             setAdminForm({
               nom: menuUser.nom || '',
               email: menuUser.email || '',
@@ -1554,9 +1556,9 @@ export default function AdminUsersPage() {
             Modifier l'administrateur
           </MenuItem>
         )}
-        
-        <MenuItem onClick={() => { 
-          handleMenuClose(); 
+
+        <MenuItem onClick={() => {
+          handleMenuClose();
           api.post('conversations/', { participants: [menuUser.id] })
             .then(res => navigate('/admin/messages', { state: { openChatId: String(res.data.id) } }))
             .catch(() => dispatch(showSnackbar({ message: 'Erreur discussion', severity: 'error' })));
@@ -1564,11 +1566,11 @@ export default function AdminUsersPage() {
           <ChatIcon fontSize="small" sx={{ mr: 1.5, color: 'primary.main' }} />
           Contacter
         </MenuItem>
-        
+
         {menuUser && ['candidate', 'admin', 'super_admin', 'moderator'].includes(menuUser.role) && (
           <Divider sx={{ my: 1 }} />
         )}
-        
+
         {menuUser && ['candidate', 'admin', 'super_admin', 'moderator'].includes(menuUser.role) && (
           <MenuItem onClick={() => handleWhatsApp(menuUser)}>
             <ChatIcon fontSize="small" sx={{ mr: 1.5, color: '#25D366' }} /> {/* WhatsApp color */}
@@ -1581,9 +1583,9 @@ export default function AdminUsersPage() {
             Identifiants par E-mail
           </MenuItem>
         )}
-        
+
         <Divider sx={{ my: 1 }} />
-        <MenuItem 
+        <MenuItem
           onClick={() => { handleMenuClose(); setDeleteTarget(menuUser); setDeleteConfirmText(''); }}
           sx={{ color: 'error.main' }}
         >
@@ -1624,10 +1626,10 @@ export default function AdminUsersPage() {
           <Button onClick={() => setDeleteTarget(null)} variant="outlined" color="inherit" sx={{ borderRadius: '10px', fontWeight: 700 }} disabled={isDeleting}>
             Annuler
           </Button>
-          <Button 
-            onClick={executeDelete} 
-            variant="contained" 
-            color="error" 
+          <Button
+            onClick={executeDelete}
+            variant="contained"
+            color="error"
             disabled={isDeleting || deleteConfirmText !== (deleteTarget?.username || deleteTarget?.nom)}
             sx={{ borderRadius: '10px', fontWeight: 700 }}
           >
@@ -1659,9 +1661,9 @@ export default function AdminUsersPage() {
           <Button onClick={() => setToggleBadgeUser(null)} variant="outlined" color="inherit" sx={{ borderRadius: '10px', fontWeight: 700 }} disabled={isTogglingBadge}>
             Annuler
           </Button>
-          <Button 
-            onClick={handleToggleBadge} 
-            variant="contained" 
+          <Button
+            onClick={handleToggleBadge}
+            variant="contained"
             color={toggleBadgeUser?.statut === 'Vérifié' ? 'warning' : 'success'}
             disabled={isTogglingBadge}
             startIcon={isTogglingBadge ? <CircularProgress size={20} color="inherit" /> : null}
