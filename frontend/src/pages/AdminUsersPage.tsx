@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
     
     const message = isAdmin 
       ? `Bonjour ${user.nom}, \n\nVotre accès ${roleDisplay} a été créé ou réinitialisé avec succès par l'administration. Voici vos identifiants pour vous connecter au back-office :\n\nE-mail : ${user.email}\nMot de passe : ${user.generatedPassword || '(Modifiez votre mot de passe à la première connexion)'}\n\nÀ très bientôt !`
-      : `Bonjour ${user.nom}, \n\nVoici vos identifiants pour accéder à votre espace candidat sur StartJobs :\n\nNom d'utilisateur : ${user.username}\nMot de passe : ${user.generatedPassword || '(Modifiez votre mot de passe à la première connexion)'}\n\nÀ très bientôt sur StartJobs !`;
+      : `Bienvenue sur StartJobs\n«Trouver un travail Facilement dans les villes de Douala et Yaoundé»\nVous êtes bien enregistré, utilisez vos identifiants pour vous connecter \nNom d'utilisateur : ${user.username}\nMot de passe : ${user.generatedPassword || '****'}\n\nLiens de connexion : ${window.location.origin}/login`;
     
     // Nettoyer le numéro
     let phoneStr = user.phone.replace(/[^0-9]/g, '');
