@@ -15,6 +15,9 @@ import { showSnackbar } from '../store/slices/snackbarSlice';
 import { MOCK_WORKERS } from '../mocks/workers';
 import api from '../utils/api';
 
+let cachedRawCandidates: any[] | null = null;
+let cachedAdsSearch: any[] | null = null;
+
 export default function SearchPage() {
   const theme = useTheme();
   const dispatch = useAppDispatch();
@@ -64,55 +67,71 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
-    api.get('offers/?is_ad=true').then(res => setAds(res.data)).catch(console.error);
+    if (cachedAdsSearch) {
+      setAds(cachedAdsSearch);
+    } else {
+      api.get('offers/?is_ad=true').then(res => {
+        cachedAdsSearch = res.data;
+        setAds(res.data);
+      }).catch(console.error);
+    }
 
-    api.get('candidates/')
-      .then((res) => {
-        const mapped = res.data.map((c: any) => {
-          const candidateQuartier = c.neighborhood || '';
-          // Simulate smart distance: same quartier → 1-2 km, different → 5-15 km
-          const isSameQuartier = userQuartier && userQuartier !== 'Tous les quartiers'
-            && candidateQuartier.toLowerCase().includes(userQuartier.toLowerCase());
-          const distance = isSameQuartier
-            ? parseFloat((Math.random() * 1.5 + 0.5).toFixed(1))
-            : parseFloat((Math.random() * 10 + 5).toFixed(1));
-          return {
-            id: String(c.user?.id || c.id),
-            user_id: c.user?.id,
-            prenom: c.user?.first_name || 'Candidat',
-            nom: c.user?.last_name || '',
-            photo: c.photo || 'https://via.placeholder.com/150',
-            photoColor: theme.palette.secondary.main,
-            quartier: candidateQuartier || 'Non renseigné',
-            distance,
-            latitude: c.latitude,
-            longitude: c.longitude,
-            score: c.score || 5,
-            totalMissions: c.total_missions || 0,
-            bio: c.bio || 'Aucune description rédigée.',
-            disponible: c.is_available,
-            domaines: c.skills?.map((s: any) => s.name) || [],
-            competences: c.skills?.map((s: any) => s.name) || [],
-            langues: c.languages?.map((l: any) => l.name) || ['Français'],
-            permis: c.has_license,
-            experiences: c.experiences?.map((xp: any) => ({
-              id: String(xp.id),
-              titre: xp.title,
-              employeur: xp.employer_name,
-              date: xp.date,
-              type: xp.exp_type,
-              rating: xp.rating,
-              commentaire: xp.comment
-            })) || [],
-            typeProfil: c.profile_type || 'Freelance'
-          };
-        });
-        setCandidates(mapped);
-      })
-      .catch((err) => {
-        console.error('Error fetching candidates:', err);
-        setCandidates(MOCK_WORKERS);
+    const processCandidates = (rawCandidates: any[]) => {
+      const mapped = rawCandidates.map((c: any) => {
+        const candidateQuartier = c.neighborhood || '';
+        // Simulate smart distance: same quartier → 1-2 km, different → 5-15 km
+        const isSameQuartier = userQuartier && userQuartier !== 'Tous les quartiers'
+          && candidateQuartier.toLowerCase().includes(userQuartier.toLowerCase());
+        const distance = isSameQuartier
+          ? parseFloat((Math.random() * 1.5 + 0.5).toFixed(1))
+          : parseFloat((Math.random() * 10 + 5).toFixed(1));
+        return {
+          id: String(c.user?.id || c.id),
+          user_id: c.user?.id,
+          prenom: c.user?.first_name || 'Candidat',
+          nom: c.user?.last_name || '',
+          photo: c.photo || 'https://via.placeholder.com/150',
+          photoColor: theme.palette.secondary.main,
+          quartier: candidateQuartier || 'Non renseigné',
+          distance,
+          latitude: c.latitude,
+          longitude: c.longitude,
+          score: c.score || 5,
+          totalMissions: c.total_missions || 0,
+          bio: c.bio || 'Aucune description rédigée.',
+          disponible: c.is_available,
+          domaines: c.skills?.map((s: any) => s.name) || [],
+          competences: c.skills?.map((s: any) => s.name) || [],
+          langues: c.languages?.map((l: any) => l.name) || ['Français'],
+          permis: c.has_license,
+          experiences: c.experiences?.map((xp: any) => ({
+            id: String(xp.id),
+            titre: xp.title,
+            employeur: xp.employer_name,
+            date: xp.date,
+            type: xp.exp_type,
+            rating: xp.rating,
+            commentaire: xp.comment
+          })) || [],
+          typeProfil: c.profile_type || 'Freelance'
+        };
       });
+      setCandidates(mapped);
+    };
+
+    if (cachedRawCandidates) {
+      processCandidates(cachedRawCandidates);
+    } else {
+      api.get('candidates/')
+        .then((res) => {
+          cachedRawCandidates = res.data;
+          processCandidates(res.data);
+        })
+        .catch((err) => {
+          console.error('Error fetching candidates:', err);
+          setCandidates(MOCK_WORKERS);
+        });
+    }
   }, [theme, userQuartier]);
 
   const filtered = useMemo(() => {

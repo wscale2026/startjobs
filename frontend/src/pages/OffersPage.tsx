@@ -21,6 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import api from '../utils/api';
 
+let cachedAds: any[] | null = null;
 
 export default function OffersPage() {
   const theme = useTheme();
@@ -46,8 +47,15 @@ export default function OffersPage() {
     if (offersStatus === 'idle') {
       dispatch(fetchOffers());
     }
-    // Fetch ads
-    api.get('offers/?is_ad=true').then(res => setAds(res.data)).catch(console.error);
+    // Fetch ads with simple cache
+    if (cachedAds) {
+      setAds(cachedAds);
+    } else {
+      api.get('offers/?is_ad=true').then(res => {
+        cachedAds = res.data;
+        setAds(res.data);
+      }).catch(console.error);
+    }
   }, [offersStatus, dispatch]);
 
   // Filter offers depending on role
