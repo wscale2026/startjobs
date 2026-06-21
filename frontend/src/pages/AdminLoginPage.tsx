@@ -128,7 +128,7 @@ export default function AdminLoginPage() {
               type="submit"
               variant="contained"
               size="large"
-              disabled={loading}
+              disabled={loading || !email.trim() || !password.trim()}
               sx={{
                 mt: 2, py: 1.5, borderRadius: '12px', fontWeight: 700, fontSize: '1rem',
                 boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
