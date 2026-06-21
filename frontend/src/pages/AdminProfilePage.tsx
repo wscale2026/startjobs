@@ -21,7 +21,6 @@ export default function AdminProfilePage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
@@ -29,7 +28,6 @@ export default function AdminProfilePage() {
       setFirstName(currentUser.first_name || '');
       setLastName(currentUser.last_name || '');
       setEmail(currentUser.email || '');
-      setUsername(currentUser.username || '');
     }
   }, [currentUser]);
 
@@ -61,7 +59,7 @@ export default function AdminProfilePage() {
     }
   };
 
-  const displayName = `${firstName} ${lastName}`.trim() || username || 'Admin';
+  const displayName = `${firstName} ${lastName}`.trim() || 'Admin';
 
   return (
     <Box sx={{ pb: 6, maxWidth: 900, mx: 'auto' }}>
@@ -104,17 +102,7 @@ export default function AdminProfilePage() {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField fullWidth label="Nom de famille" variant="outlined" value={lastName} onChange={(e) => setLastName(e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }} />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Nom d'utilisateur"
-                  variant="outlined"
-                  value={username}
-                  disabled
-                  helperText="Non modifiable"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                />
-              </Grid>
+
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   fullWidth label="Adresse Email" variant="outlined" value={email}

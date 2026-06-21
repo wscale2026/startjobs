@@ -93,7 +93,7 @@ export default function AdminLoginPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             <TextField
               fullWidth
-              label="Email ou Nom d'utilisateur"
+              label="Adresse Email"
               variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
