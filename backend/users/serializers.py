@@ -19,7 +19,8 @@ class UserSerializer(serializers.ModelSerializer):
                 'statut': 'Vérifié' if getattr(obj.candidate_profile, 'verified', False) else 'Non vérifié',
                 'offresTotal': obj.candidate_profile.total_missions,
                 'generated_password': getattr(obj.candidate_profile, 'generated_password', ''),
-                'neighborhood': getattr(obj.candidate_profile, 'neighborhood', '')
+                'neighborhood': getattr(obj.candidate_profile, 'neighborhood', ''),
+                'photo': obj.candidate_profile.photo.url if obj.candidate_profile.photo else None,
             }
         return None
 
@@ -37,7 +38,8 @@ class UserSerializer(serializers.ModelSerializer):
                 'description': obj.employer_profile.description,
                 'recruits_per_month': obj.employer_profile.recruits_per_month,
                 'verification_requested': obj.employer_profile.verification_requested,
-                'generated_password': getattr(obj.employer_profile, 'generated_password', '')
+                'generated_password': getattr(obj.employer_profile, 'generated_password', ''),
+                'logo': obj.employer_profile.logo.url if obj.employer_profile.logo else None,
             }
         return None
 

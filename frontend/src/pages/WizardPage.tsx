@@ -74,7 +74,7 @@ function validateStep(step: number, data: any): string | null {
 }
 
 // ─── Step 1: Identity ───────────────────────────────────────────────────────
-function Step1({ data, onChange, errors }: any) {
+function Step1({ data, onChange, setPhotoFile, errors }: any) {
   const LOCATIONS = useAppSelector(state => state.locationsGlobal.locations);
   const CITIES = Object.keys(LOCATIONS);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -109,7 +109,8 @@ function Step1({ data, onChange, errors }: any) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const previewUrl = URL.createObjectURL(file);
-      onChange({ photoFile: file, photoPreview: previewUrl });
+      if (setPhotoFile) setPhotoFile(file);
+      onChange({ photoPreview: previewUrl });
     }
   };
 
@@ -496,6 +497,7 @@ export default function WizardPage() {
   const [loading, setLoading] = React.useState(false);
   const [stepError, setStepError] = React.useState<string | null>(null);
   const [emailVerificationSent, setEmailVerificationSent] = React.useState(false);
+  const [photoFile, setPhotoFile] = React.useState<File | null>(null);
 
   const handleChange = (patch: any) => {
     dispatch(updateData(patch));
@@ -545,8 +547,8 @@ export default function WizardPage() {
       profile_data: profileData
     };
 
-    if (data.photoFile) {
-      registerData.photoFile = data.photoFile;
+    if (photoFile) {
+      registerData.photoFile = photoFile;
     }
 
     dispatch(register(registerData))
@@ -584,7 +586,7 @@ export default function WizardPage() {
   }
 
   const steps = [
-    <Step1 data={data} onChange={handleChange} errors={stepError ? { general: stepError } : {}} />,
+    <Step1 data={data} onChange={handleChange} setPhotoFile={setPhotoFile} errors={stepError ? { general: stepError } : {}} />,
     <Step2 data={data} onChange={handleChange} errors={stepError ? { domaines: stepError } : {}} />,
     <Step3 data={data} onChange={handleChange} />,
     <Step4 data={data} onChange={handleChange} />,
