@@ -143,12 +143,21 @@ const TESTIMONIALS = [
 export default function LandingPage() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const isAuthenticated = useAppSelector((state: any) => state.auth.status === 'succeeded' || !!state.auth.user);
+  const { user, status } = useAppSelector((state: any) => state.auth);
+  const isAuthenticated = status === 'succeeded' || !!user;
   const isDark = theme.palette.mode === 'dark';
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleProtectedNavigate = (path: string) => {
-    if (isAuthenticated) {
+  const handleCandidateNavigate = (path: string) => {
+    if (isAuthenticated && user?.role === 'candidate') {
+      navigate(path);
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleEmployerNavigate = (path: string) => {
+    if (isAuthenticated && user?.role === 'employer') {
       navigate(path);
     } else {
       navigate('/login');
@@ -209,7 +218,7 @@ export default function LandingPage() {
           <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
             <Button
               variant="text"
-              onClick={() => handleProtectedNavigate('/search')}
+              onClick={() => handleEmployerNavigate('/search')}
               sx={{
                 color: 'text.secondary', fontWeight: 600,
                 fontSize: '0.875rem',
@@ -314,7 +323,7 @@ export default function LandingPage() {
                   fullWidth
                   onClick={() => {
                     if (item.path === '/search') {
-                      handleProtectedNavigate(item.path);
+                      handleEmployerNavigate(item.path);
                     } else {
                       navigate(item.path);
                     }
@@ -335,7 +344,7 @@ export default function LandingPage() {
                 <ListItemButton
                   onClick={() => {
                     if (item.path === '/search') {
-                      handleProtectedNavigate(item.path);
+                      handleEmployerNavigate(item.path);
                     } else {
                       navigate(item.path);
                     }
@@ -448,7 +457,7 @@ export default function LandingPage() {
                 boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`,
               },
             }}
-            onClick={() => handleProtectedNavigate('/search')}
+            onClick={() => handleEmployerNavigate('/search')}
           >
             <Box className="status-dot-live" />
             <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: '-0.005em', color: 'text.secondary' }}>
@@ -517,7 +526,7 @@ export default function LandingPage() {
               variant="contained"
               size="large"
               startIcon={<SearchIcon />}
-              onClick={() => handleProtectedNavigate('/search')}
+              onClick={() => handleCandidateNavigate('/offers')}
               className="pressable"
               fullWidth
               sx={{
@@ -742,7 +751,7 @@ export default function LandingPage() {
               component={motion.div}
               variants={pop3DVariant}
               whileHover={{ y: -3, scale: 1.05 }}
-              onClick={() => handleProtectedNavigate('/search')}
+              onClick={() => handleEmployerNavigate('/search')}
               className="pressable"
               sx={{
                 display: 'inline-flex',
@@ -772,7 +781,7 @@ export default function LandingPage() {
             component={motion.div}
             variants={pop3DVariant}
             whileHover={{ y: -3, scale: 1.05 }}
-            onClick={() => handleProtectedNavigate('/search')}
+            onClick={() => handleEmployerNavigate('/search')}
             className="pressable"
             sx={{
               display: 'inline-flex', alignItems: 'center', gap: 0.75,
