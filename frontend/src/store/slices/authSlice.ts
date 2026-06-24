@@ -121,7 +121,8 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
       formData.append('profile_data', JSON.stringify(userData.profile_data));
       formData.append('photo', userData.photoFile);
       payload = formData;
-      headers = { 'Content-Type': 'multipart/form-data' };
+      // Do not manually set 'Content-Type': 'multipart/form-data' 
+      // Axios sets it automatically with the correct boundary when passing FormData
     }
 
     await api.post('register/', payload, { headers });
@@ -147,7 +148,8 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
     if (detail.toLowerCase().includes('vérifier') || detail.toLowerCase().includes('email')) {
       return rejectWithValue('REQUIRES_EMAIL_VERIFICATION');
     }
-    return rejectWithValue(error.response?.data?.detail || 'Erreur lors de l\'inscription');
+    
+    return rejectWithValue(detail || 'Erreur lors de l\'inscription');
   }
 });
 

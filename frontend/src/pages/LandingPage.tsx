@@ -20,6 +20,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import LoginIcon from '@mui/icons-material/Login';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { useNavigate } from 'react-router-dom';
+import { useAppSelector } from '../store';
 import ThemeToggle from '../components/ThemeToggle';
 import TiltCard from '../components/TiltCard';
 
@@ -142,8 +143,17 @@ const TESTIMONIALS = [
 export default function LandingPage() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const isAuthenticated = useAppSelector((state: any) => state.auth.status === 'succeeded' || !!state.auth.user);
   const isDark = theme.palette.mode === 'dark';
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleProtectedNavigate = (path: string) => {
+    if (isAuthenticated) {
+      navigate(path);
+    } else {
+      navigate('/login');
+    }
+  };
 
   const menuItems = [
     { label: 'Explorer', path: '/search', icon: <SearchIcon /> },
@@ -199,7 +209,7 @@ export default function LandingPage() {
           <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
             <Button
               variant="text"
-              onClick={() => navigate('/search')}
+              onClick={() => handleProtectedNavigate('/search')}
               sx={{
                 color: 'text.secondary', fontWeight: 600,
                 fontSize: '0.875rem',
@@ -303,7 +313,11 @@ export default function LandingPage() {
                   variant="contained"
                   fullWidth
                   onClick={() => {
-                    navigate(item.path);
+                    if (item.path === '/search') {
+                      handleProtectedNavigate(item.path);
+                    } else {
+                      navigate(item.path);
+                    }
                     setMobileOpen(false);
                   }}
                   startIcon={item.icon}
@@ -320,7 +334,11 @@ export default function LandingPage() {
               ) : (
                 <ListItemButton
                   onClick={() => {
-                    navigate(item.path);
+                    if (item.path === '/search') {
+                      handleProtectedNavigate(item.path);
+                    } else {
+                      navigate(item.path);
+                    }
                     setMobileOpen(false);
                   }}
                   sx={{
@@ -430,7 +448,7 @@ export default function LandingPage() {
                 boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.08)}`,
               },
             }}
-            onClick={() => navigate('/search')}
+            onClick={() => handleProtectedNavigate('/search')}
           >
             <Box className="status-dot-live" />
             <Typography variant="caption" sx={{ fontWeight: 600, letterSpacing: '-0.005em', color: 'text.secondary' }}>
@@ -499,7 +517,7 @@ export default function LandingPage() {
               variant="contained"
               size="large"
               startIcon={<SearchIcon />}
-              onClick={() => navigate('/search')}
+              onClick={() => handleProtectedNavigate('/search')}
               className="pressable"
               fullWidth
               sx={{
@@ -724,7 +742,7 @@ export default function LandingPage() {
               component={motion.div}
               variants={pop3DVariant}
               whileHover={{ y: -3, scale: 1.05 }}
-              onClick={() => navigate('/search')}
+              onClick={() => handleProtectedNavigate('/search')}
               className="pressable"
               sx={{
                 display: 'inline-flex',
@@ -754,7 +772,7 @@ export default function LandingPage() {
             component={motion.div}
             variants={pop3DVariant}
             whileHover={{ y: -3, scale: 1.05 }}
-            onClick={() => navigate('/search')}
+            onClick={() => handleProtectedNavigate('/search')}
             className="pressable"
             sx={{
               display: 'inline-flex', alignItems: 'center', gap: 0.75,

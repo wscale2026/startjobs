@@ -7,8 +7,8 @@ export interface LocationsGlobalState {
 
 const initialState: LocationsGlobalState = {
   locations: {
-    'Douala': ['Akwa', 'Bonanjo', 'Bonapriso', 'Deido', 'Makepe', 'Bonamoussadi', 'Logpom', 'Kotto', 'Bali'],
-    'Yaoundé': ['Bastos', 'Ngoa-Ekélé', 'Mokolo', 'Biyem-Assi', 'Omnisports']
+    'Douala': [],
+    'Yaoundé': []
   }
 };
 
