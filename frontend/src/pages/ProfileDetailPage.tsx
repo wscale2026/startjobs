@@ -62,6 +62,9 @@ export default function ProfileDetailPage() {
             competences: c.skills?.map((s: any) => s.name) || [],
             langues: c.languages?.map((l: any) => l.name) || [],
             permis: c.has_license,
+            diplome: c.highest_diploma || null,
+            etablissement: c.institution || null,
+            anneeObtention: c.graduation_year || null,
             experiences: c.experiences?.map((xp: any) => ({
               id: String(xp.id),
               titre: xp.title,
@@ -133,6 +136,9 @@ export default function ProfileDetailPage() {
               competences: c.skills?.map((s: any) => s.name) || [],
               langues: c.languages?.map((l: any) => l.name) || [],
               permis: c.has_license,
+              diplome: c.highest_diploma || null,
+              etablissement: c.institution || null,
+              anneeObtention: c.graduation_year || null,
               experiences: c.experiences?.map((xp: any) => ({
                 id: String(xp.id),
                 titre: xp.title,
@@ -437,6 +443,25 @@ export default function ProfileDetailPage() {
                 ) : (
                   <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>Non renseignées</Typography>
                 )}
+              </Box>
+
+              {/* Formation */}
+              <Box sx={{ p: 2.5, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Formation</Typography>
+                <Stack spacing={1.5}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">Diplôme le plus élevé</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{worker.diplome || 'Non renseigné'}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">Établissement</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{worker.etablissement || 'Non renseigné'}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">Année d'obtention</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{worker.anneeObtention || 'Non renseignée'}</Typography>
+                  </Box>
+                </Stack>
               </Box>
 
               {/* Domaines */}

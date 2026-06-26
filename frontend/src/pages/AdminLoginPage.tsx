@@ -140,6 +140,17 @@ export default function AdminLoginPage() {
             </Button>
           </Box>
         </form>
+
+        <Box sx={{ mt: 3, textAlign: 'center' }}>
+          <Button
+            variant="text"
+            color="secondary"
+            onClick={() => navigate('/')}
+            sx={{ fontWeight: 600, textTransform: 'none' }}
+          >
+            ← Retour à l'accueil
+          </Button>
+        </Box>
       </Box>
     </Box>
   );

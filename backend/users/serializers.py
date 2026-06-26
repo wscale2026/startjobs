@@ -14,13 +14,37 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_candidate_profile(self, obj):
         if hasattr(obj, 'candidate_profile'):
+            profile = obj.candidate_profile
             return {
-                'phone': getattr(obj.candidate_profile, 'phone', ''),
-                'statut': 'Vérifié' if getattr(obj.candidate_profile, 'verified', False) else 'Non vérifié',
-                'offresTotal': obj.candidate_profile.total_missions,
-                'generated_password': getattr(obj.candidate_profile, 'generated_password', ''),
-                'neighborhood': getattr(obj.candidate_profile, 'neighborhood', ''),
-                'photo': obj.candidate_profile.photo.url if obj.candidate_profile.photo else None,
+                'phone': getattr(profile, 'phone', ''),
+                'statut': 'Vérifié' if getattr(profile, 'verified', False) else 'Non vérifié',
+                'offresTotal': getattr(profile, 'total_missions', 0),
+                'generated_password': getattr(profile, 'generated_password', ''),
+                'neighborhood': getattr(profile, 'neighborhood', ''),
+                'date_of_birth': getattr(profile, 'date_of_birth', None),
+                'highest_diploma': getattr(profile, 'highest_diploma', ''),
+                'institution': getattr(profile, 'institution', ''),
+                'graduation_year': getattr(profile, 'graduation_year', ''),
+                'photo': self.context['request'].build_absolute_uri(profile.photo.url) if 'request' in self.context and getattr(profile, 'photo', None) and profile.photo.name else (profile.photo.url if getattr(profile, 'photo', None) and profile.photo.name else None),
+                'bio': getattr(profile, 'bio', ''),
+                'profile_type': getattr(profile, 'profile_type', ''),
+                'score': getattr(profile, 'score', 0),
+                'total_missions': getattr(profile, 'total_missions', 0),
+                'is_available': getattr(profile, 'is_available', True),
+                'has_license': getattr(profile, 'has_license', False),
+                'profile_views': getattr(profile, 'profile_views', 0),
+                'distance_max': getattr(profile, 'distance_max', 10),
+                'skills': [{'id': s.id, 'name': s.name} for s in profile.skills.all()] if hasattr(profile, 'skills') else [],
+                'languages': [{'id': l.id, 'name': l.name} for l in profile.languages.all()] if hasattr(profile, 'languages') else [],
+                'experiences': [
+                    {
+                        'id': exp.id,
+                        'title': exp.title,
+                        'employer_name': exp.employer_name,
+                        'date': exp.date,
+                        'exp_type': exp.exp_type
+                    } for exp in profile.experiences.all()
+                ] if hasattr(profile, 'experiences') else []
             }
         return None
 
@@ -93,11 +117,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Create corresponding profile or set admin status
         if user.role == 'employer':
             emp = EmployerProfile.objects.create(user=user, generated_password=raw_password)
+            if photo:
+                emp.logo = photo
             if profile_data:
                 for k, v in profile_data.items():
                     if hasattr(emp, k):
                         setattr(emp, k, v)
-                emp.save()
                 
                 # Auto-add to Neighborhood model so it's available in Admin and other forms
                 ville = profile_data.get('city', '')
@@ -105,6 +130,8 @@ class RegisterSerializer(serializers.ModelSerializer):
                 if ville and quartier:
                     from jobs.models import Neighborhood
                     Neighborhood.objects.get_or_create(city=ville, name=quartier)
+            
+            emp.save()
         elif user.role == 'candidate':
             cand = CandidateProfile.objects.create(user=user, generated_password=raw_password)
             if photo:
@@ -130,8 +157,9 @@ class RegisterSerializer(serializers.ModelSerializer):
                 elif ville or quartier:
                     cand.neighborhood = ville or quartier
                     
-                cand.save()
-                
+            cand.save()
+            
+            if profile_data:
                 # Handle ManyToMany
                 for skill_name in skills:
                     sk, _ = Skill.objects.get_or_create(name=skill_name)
@@ -198,7 +226,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CandidateProfile
         fields = ('id', 'user', 'bio', 'phone', 'neighborhood', 'latitude', 'longitude', 'distance_max', 'score', 'total_missions', 
-                  'is_available', 'has_license', 'profile_views', 'profile_type', 'photo', 'skills', 'languages', 'experiences', 'generated_password')
+                  'is_available', 'has_license', 'profile_views', 'profile_type', 'photo', 'skills', 'languages', 'experiences', 'generated_password', 'date_of_birth', 'highest_diploma', 'institution', 'graduation_year')
 
 class UserMeSerializer(serializers.ModelSerializer):
     employer_profile = EmployerProfileSerializer(read_only=True)

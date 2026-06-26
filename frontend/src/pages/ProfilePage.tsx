@@ -25,6 +25,7 @@ import { useAppSelector } from '../store';
 import EditProfileModal from '../components/EditProfileModal';
 import { fetchOffers } from '../store/slices/offersSlice';
 import { fetchApplications } from '../store/slices/applicationsSlice';
+import { getFullMediaUrl } from '../utils/api';
 
 // Use first mock worker as the "current user" profile
 const ME = MOCK_WORKERS[0];
@@ -50,8 +51,18 @@ export default function ProfilePage() {
 
   const candXP = user?.candidate_profile?.experiences || [];
   const sortedXP = [...candXP].sort((a: any) => a.exp_type === 'verified' ? -1 : 1);
-  const profileCompletion = user?.candidate_profile ? Math.min(100, 30 + (user.candidate_profile.skills?.length || 0) * 10 + (user.candidate_profile.bio ? 20 : 0)) : 0;
-
+  let profileCompletion = 0;
+  if (user?.candidate_profile) {
+    const cp = user.candidate_profile;
+    profileCompletion += 20; // Base score pour l'inscription
+    if (cp.bio) profileCompletion += 15;
+    if (cp.photo) profileCompletion += 15;
+    if (cp.highest_diploma || cp.institution) profileCompletion += 15;
+    if (cp.skills && cp.skills.length > 0) profileCompletion += 15;
+    if (cp.experiences && cp.experiences.length > 0) profileCompletion += 10;
+    if (cp.languages && cp.languages.length > 0) profileCompletion += 10;
+    profileCompletion = Math.min(100, profileCompletion);
+  }
   const isDark = theme.palette.mode === 'dark';
 
   const handleLogout = () => {
@@ -82,7 +93,7 @@ export default function ProfilePage() {
           {/* Avatar Superposé */}
           <Box sx={{ position: 'absolute', bottom: { xs: -40, md: -50 }, left: { xs: 24, md: 32 } }}>
             <Avatar 
-              src={user?.employer_profile?.logo || undefined}
+              src={getFullMediaUrl(user?.employer_profile?.logo) || undefined}
               sx={{ 
                 width: { xs: 80, md: 120 }, 
                 height: { xs: 80, md: 120 }, 
@@ -327,7 +338,7 @@ export default function ProfilePage() {
         {/* Avatar Superposé */}
         <Box sx={{ position: 'absolute', bottom: { xs: -40, md: -50 }, left: { xs: 24, md: 32 } }}>
           <Avatar 
-            src={user?.candidate_profile?.photo || undefined}
+            src={getFullMediaUrl(user?.candidate_profile?.photo) || undefined}
             sx={{ 
               width: { xs: 80, md: 120 }, 
               height: { xs: 80, md: 120 }, 
@@ -416,6 +427,44 @@ export default function ProfilePage() {
       <Grid container spacing={4} sx={{ px: 2 }}>
         {/* Colonne de Gauche : Domaines, Compétences, Stats */}
         <Grid size={{ xs: 12, md: 5 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`, mb: 4, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#ffffff' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Informations de contact</Typography>
+            <Stack spacing={2.5}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Email</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>{user?.email || '-'}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Téléphone</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>{user?.candidate_profile?.phone || 'Non renseigné'}</Typography>
+              </Box>
+              {user?.candidate_profile?.date_of_birth && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Date de naissance</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{new Date(user.candidate_profile.date_of_birth).toLocaleDateString('fr-FR')}</Typography>
+                </Box>
+              )}
+            </Stack>
+          </Paper>
+
+          <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`, mb: 4 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Formation</Typography>
+            <Stack spacing={2.5}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Diplôme le plus élevé</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>{user?.candidate_profile?.highest_diploma || 'Non renseigné'}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Établissement</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>{user?.candidate_profile?.institution || 'Non renseigné'}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>Année d'obtention</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>{user?.candidate_profile?.graduation_year || 'Non renseignée'}</Typography>
+              </Box>
+            </Stack>
+          </Paper>
+
           <Paper elevation={0} sx={{ p: 3, borderRadius: '20px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`, mb: 4 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Domaines d'activité</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>

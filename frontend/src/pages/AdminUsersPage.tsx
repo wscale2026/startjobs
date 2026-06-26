@@ -25,11 +25,13 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import BadgeIcon from '@mui/icons-material/Badge';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import SchoolIcon from '@mui/icons-material/School';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
-import api from '../utils/api';
+import api, { fetcher } from '../utils/api';
+import useSWR from 'swr';
 
 // Utility: generate a random password
 function generatePassword(length = 10): string {
@@ -61,8 +63,67 @@ export default function AdminUsersPage() {
   const [editAdminOpen, setEditAdminOpen] = useState(false);
   const [candidateFormLoading, setCandidateFormLoading] = useState(false);
   const [adminForm, setAdminForm] = useState({ nom: '', email: '', phone: '', password: '', role: 'moderator' });
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawUsers, error, mutate: fetchUsers } = useSWR('/users/', fetcher);
+
+  const allUsers = React.useMemo(() => {
+    if (!rawUsers) return [];
+    const formatted = rawUsers.map((u: any) => {
+      let profile = u.candidate_profile;
+      if (u.role === 'employer') profile = u.employer_profile;
+      if (['admin', 'super_admin', 'moderator'].includes(u.role)) profile = u.admin_profile;
+
+      const candidateProfile = u.role === 'candidate' ? u.candidate_profile : null;
+
+      return {
+        id: String(u.id),
+        nom: [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.username,
+        prenom: u.first_name || '',
+        nom_famille: u.last_name || '',
+        role: u.role,
+        email: u.email,
+        phone: profile?.phone || '',
+        statut: profile?.statut || (u.is_active ? 'Actif' : 'Inactif'),
+        online: false,
+        date: new Date(u.date_joined).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        rawDate: new Date(u.date_joined),
+        avatar: u.username ? u.username[0].toUpperCase() : 'U',
+        offresTotal: profile?.offresTotal || 0,
+        username: u.username,
+        generatedPassword: profile?.generated_password || '',
+        neighborhood: profile?.neighborhood || '',
+        companyName: profile?.company_name || '',
+        city: profile?.city || '',
+        industry: profile?.industry || '',
+        address: profile?.address || '',
+        description: profile?.description || '',
+        recruitsPerMonth: profile?.recruits_per_month || '',
+        verificationRequested: profile?.verification_requested || false,
+        // ── Candidate-specific fields ──────────────────
+        bio: candidateProfile?.bio || '',
+        photo: candidateProfile?.photo || null,
+        profileType: candidateProfile?.profile_type || '',
+        skills: candidateProfile?.skills || [],
+        languages: candidateProfile?.languages || [],
+        experiences: candidateProfile?.experiences || [],
+        score: candidateProfile?.score || 0,
+        totalMissions: candidateProfile?.total_missions || 0,
+        isAvailable: candidateProfile?.is_available ?? true,
+        hasLicense: candidateProfile?.has_license ?? false,
+        profileViews: candidateProfile?.profile_views || 0,
+        distanceMax: candidateProfile?.distance_max || 10,
+        dateOfBirth: candidateProfile?.date_of_birth || '',
+        highestDiploma: candidateProfile?.highest_diploma || '',
+        institution: candidateProfile?.institution || '',
+        graduationYear: candidateProfile?.graduation_year || '',
+      };
+    });
+
+    formatted.sort((a: any, b: any) => b.rawDate.getTime() - a.rawDate.getTime());
+    return formatted;
+  }, [rawUsers]);
+
+  const loading = !rawUsers && !error;
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuUser, setMenuUser] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
@@ -72,60 +133,11 @@ export default function AdminUsersPage() {
   const [toggleBadgeUser, setToggleBadgeUser] = useState<any>(null);
   const [isTogglingBadge, setIsTogglingBadge] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/users/');
-      const formatted = res.data.map((u: any) => {
-        let profile = u.candidate_profile;
-        if (u.role === 'employer') profile = u.employer_profile;
-        if (['admin', 'super_admin', 'moderator'].includes(u.role)) profile = u.admin_profile;
-
-        return {
-          id: String(u.id),
-          nom: [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.username,
-          role: u.role,
-          email: u.email,
-          phone: profile?.phone || '',
-          statut: profile?.statut || (u.is_active ? 'Actif' : 'Inactif'),
-          online: false,
-          date: new Date(u.date_joined).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-          rawDate: new Date(u.date_joined),
-          avatar: u.username ? u.username[0].toUpperCase() : 'U',
-          offresTotal: profile?.offresTotal || 0,
-          username: u.username,
-          generatedPassword: profile?.generated_password || '',
-          neighborhood: profile?.neighborhood || '',
-          companyName: profile?.company_name || '',
-          city: profile?.city || '',
-          industry: profile?.industry || '',
-          address: profile?.address || '',
-          description: profile?.description || '',
-          recruitsPerMonth: profile?.recruits_per_month || '',
-          verificationRequested: profile?.verification_requested || false
-        };
-      });
-
-      // Sort users by registration date (newest first)
-      formatted.sort((a: any, b: any) => b.rawDate.getTime() - a.rawDate.getTime());
-
-      setAllUsers(formatted);
-    } catch (err) {
-      dispatch(showSnackbar({ message: 'Erreur lors du chargement des utilisateurs', severity: 'error' }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Candidate form state
   const [candForm, setCandForm] = useState({
-    prenom: '', nom: '', email: '', phone: '', dateNaissance: '',
+    prenom: '', nom: '', email: '', phone: '', dateNaissance: '', diplome: '', etablissement: '', anneeObtention: '',
     ville: '', quartier: '', typeProfil: 'Freelance',
-    username: '', password: '',
+    username: '', password: '', bio: '',
   });
 
   const generateCandidateCredentials = () => {
@@ -174,7 +186,7 @@ export default function AdminUsersPage() {
         username: candForm.username,
         generatedPassword: candForm.password,
       };
-      setAllUsers(prev => [...prev, newUser]);
+      fetchUsers();
       setCreatedCredentials({ username: candForm.username, password: candForm.password });
       setCandidateFormLoading(false);
     } catch (err: any) {
@@ -190,19 +202,28 @@ export default function AdminUsersPage() {
     }
     setCandidateFormLoading(true);
     try {
-      await api.patch(`/admin/update-user/${selectedUser.id}/`, {
+      const payload: any = {
         username: candForm.username,
         email: candForm.email,
-        password: candForm.password,
         first_name: candForm.prenom,
         last_name: candForm.nom,
         profile: {
           phone: candForm.phone,
           ville: candForm.ville,
           quartier: candForm.quartier,
-          generated_password: candForm.password || undefined // Only update if a new one is set
+          bio: candForm.bio,
+          profile_type: candForm.typeProfil,
+          date_of_birth: candForm.dateNaissance || null,
+          highest_diploma: candForm.diplome || '',
+          institution: candForm.etablissement || '',
+          graduation_year: candForm.anneeObtention || '',
         }
-      });
+      };
+      if (candForm.password) {
+        payload.password = candForm.password;
+        payload.profile.generated_password = candForm.password;
+      }
+      await api.patch(`/admin/update-user/${selectedUser.id}/`, payload);
 
       dispatch(showSnackbar({ message: 'Candidat modifié avec succès', severity: 'success' }));
       setEditCandidateOpen(false);
@@ -303,16 +324,25 @@ export default function AdminUsersPage() {
   const executeDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
+    
+    // Optimistic UI Update: Retirer immédiatement l'utilisateur de l'affichage
+    const prevUsers = rawUsers;
+    const optimisticData = rawUsers?.filter((u: any) => String(u.id) !== String(deleteTarget.id));
+    fetchUsers(optimisticData, { revalidate: false });
+
     try {
       await api.delete(`users/${deleteTarget.id}/`);
-      setAllUsers(prev => prev.filter(u => u.id !== deleteTarget.id));
       dispatch(showSnackbar({ message: 'Utilisateur supprimé avec succès.', severity: 'success' }));
-      setDeleteTarget(null);
-      setDeleteConfirmText('');
     } catch (err) {
+      // Revenir à l'état précédent en cas d'erreur
+      fetchUsers(prevUsers, { revalidate: false });
       dispatch(showSnackbar({ message: 'Erreur lors de la suppression.', severity: 'error' }));
     } finally {
       setIsDeleting(false);
+      setDeleteTarget(null);
+      setDeleteConfirmText('');
+      // Synchroniser avec le serveur en arrière-plan
+      fetchUsers();
     }
   };
 
@@ -352,7 +382,7 @@ export default function AdminUsersPage() {
   const isEmployerTab = tabIndex === 1;
   const isCandidateTab = tabIndex === 0;
 
-  const filteredUsers = allUsers.filter(u => {
+  const filteredUsers = allUsers.filter((u: any) => {
     const roleMatch = getRoleFilter().includes(u.role);
     const s = search.toLowerCase();
     const nomStr = (u.nom || '').toLowerCase();
@@ -380,7 +410,7 @@ export default function AdminUsersPage() {
             <Button
               variant="contained"
               startIcon={<PersonAddIcon />}
-              onClick={() => { setCreatedCredentials(null); setCandForm({ prenom: '', nom: '', email: '', phone: '', dateNaissance: '', ville: '', quartier: '', typeProfil: 'Freelance', username: '', password: '' }); setAddCandidateOpen(true); }}
+              onClick={() => { setCreatedCredentials(null); setCandForm({ prenom: '', nom: '', email: '', phone: '', dateNaissance: '', diplome: '', etablissement: '', anneeObtention: '', ville: '', quartier: '', typeProfil: 'Freelance', username: '', password: '', bio: '' }); setAddCandidateOpen(true); }}
               sx={{ borderRadius: '12px', fontWeight: 700, px: 3, boxShadow: `0 8px 24px ${alpha(theme.palette.secondary.main, 0.3)}`, bgcolor: 'secondary.main', '&:hover': { bgcolor: 'secondary.dark' } }}
             >
               Nouveau Candidat
@@ -443,7 +473,7 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedUsers.map((row) => (
+              {paginatedUsers.map((row: any) => (
                 <TableRow
                   key={row.id}
                   component={motion.tr}
@@ -572,76 +602,183 @@ export default function AdminUsersPage() {
             </DialogTitle>
             <DialogContent dividers sx={{ borderBottom: 'none', p: 0, bgcolor: 'background.default' }}>
               {selectedUser.role === 'candidate' ? (
-                <Box sx={{ p: { xs: 2.5, md: 3.5 }, bgcolor: 'background.paper' }}>
-                  <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    <Avatar sx={{ width: 72, height: 72, bgcolor: theme.palette.primary.main, fontSize: '1.25rem', fontWeight: 700, borderRadius: '16px', flexShrink: 0 }}>
-                      {selectedUser.avatar}
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.025em' }}>
-                          {selectedUser.nom}
+                <Box sx={{ bgcolor: 'background.paper' }}>
+                  {/* ── HEADER CANDIDAT ── */}
+                  <Box sx={{ p: { xs: 2.5, md: 3 }, background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.07)}, ${alpha(theme.palette.secondary.main, 0.04)})`, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                    <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                      <Avatar
+                        src={selectedUser.photo || undefined}
+                        sx={{ width: 80, height: 80, bgcolor: theme.palette.primary.main, fontSize: '2rem', fontWeight: 700, borderRadius: '16px', flexShrink: 0, border: `3px solid ${alpha(theme.palette.primary.main, 0.3)}` }}
+                      >
+                        {!selectedUser.photo && selectedUser.avatar}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.25 }}>{selectedUser.nom}</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                          {selectedUser.profileType && <Chip label={selectedUser.profileType} size="small" color="primary" sx={{ fontWeight: 700, fontSize: '0.7rem' }} />}
+                          <Chip label={selectedUser.isAvailable ? 'Disponible' : 'Indisponible'} size="small" color={selectedUser.isAvailable ? 'success' : 'default'} sx={{ fontWeight: 700, fontSize: '0.7rem' }} />
+                          {selectedUser.hasLicense && <Chip label="Permis ✓" size="small" color="info" variant="outlined" sx={{ fontWeight: 700, fontSize: '0.7rem' }} />}
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          📅 Inscrit le {selectedUser.date} · @{selectedUser.username}
                         </Typography>
-                        {selectedUser.statut === 'Vérifié' && <VerifiedIcon sx={{ color: 'secondary.main', fontSize: 18 }} />}
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-                        <PlaceIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                          Douala · Profil Candidat
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: alpha('#F59E0B', 0.1), borderRadius: '6px', px: 1.5, py: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, minWidth: 64 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: alpha('#F59E0B', 0.12), borderRadius: '8px', px: 1.5, py: 0.5 }}>
                           <StarIcon sx={{ fontSize: 14, color: '#F59E0B' }} />
-                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 800, color: '#92400E' }}>4.8</Typography>
+                          <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: '#92400E' }}>{selectedUser.score || '0'}</Typography>
                         </Box>
-                        <Typography variant="body2" color="text.secondary">Inscrit depuis le {selectedUser.date}</Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: selectedUser.online ? 'success.main' : 'text.disabled' }} />
-                          <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.75rem', color: selectedUser.online ? 'success.main' : 'text.disabled' }}>
-                            {selectedUser.online ? 'En ligne' : 'Hors ligne'}
-                          </Typography>
-                        </Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Score</Typography>
                       </Box>
                     </Box>
                   </Box>
-                  <Typography variant="body1" sx={{ mt: 2.5, lineHeight: 1.75, color: 'text.secondary' }}>
-                    Jeune chercheur d'emploi ou travailleur indépendant inscrit sur la plateforme. Cet utilisateur est {selectedUser.statut.toLowerCase()} et {selectedUser.online ? 'actuellement actif' : 'actuellement inactif'}.
-                  </Typography>
-                  <Grid container spacing={2} sx={{ mt: 2 }}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>Email de contact</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{selectedUser.email}</Typography>
-                      </Paper>
+
+                  <Box sx={{ p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+
+                    {/* ── STATISTIQUES ── */}
+                    <Grid container spacing={1.5}>
+                      {[
+                        { label: 'Missions', value: selectedUser.totalMissions },
+                        { label: 'Vues profil', value: selectedUser.profileViews },
+                        { label: 'Rayon max', value: `${selectedUser.distanceMax} km` },
+                      ].map(s => (
+                        <Grid size={{ xs: 4 }} key={s.label}>
+                          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '10px', textAlign: 'center' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 800 }}>{s.value}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{s.label}</Typography>
+                          </Paper>
+                        </Grid>
+                      ))}
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>Téléphone vérifié</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{selectedUser.phone || 'Non renseigné'}</Typography>
-                      </Paper>
-                    </Grid>
-                    {selectedUser.username && (
-                      <Grid size={{ xs: 12 }}>
-                        <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(theme.palette.secondary.main, 0.05), border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}` }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box>
-                              <Typography variant="caption" color="secondary.main" sx={{ fontWeight: 700 }}>🔑 Identifiants d'accès</Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Nom d'utilisateur: {selectedUser.username}</Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Mot de passe: {selectedUser.generatedPassword || '••••••••'}</Typography>
-                            </Box>
-                            <IconButton
-                              size="small"
-                              color="secondary"
-                              onClick={() => copyCredentials(selectedUser.username, selectedUser.generatedPassword || '')}
-                            >
-                              <ContentCopyIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Paper>
-                      </Grid>
+
+                    {/* ── BIO ── */}
+                    {selectedUser.bio && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Biographie</Typography>
+                        <Typography variant="body2" sx={{ mt: 0.5, lineHeight: 1.7, p: 1.5, borderRadius: '10px', bgcolor: alpha(theme.palette.primary.main, 0.04), border: `1px solid ${theme.palette.divider}` }}>
+                          {selectedUser.bio}
+                        </Typography>
+                      </Box>
                     )}
-                  </Grid>
+
+                    {/* ── CONTACT & LOCALISATION ── */}
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px' }}>
+                      <Typography variant="caption" color="primary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5 }}>📋 Contact & Localisation</Typography>
+                      <Stack spacing={1.5}>
+                        {selectedUser.dateOfBirth && (
+                          <>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}><BadgeIcon sx={{ fontSize: 15, color: 'text.disabled' }} /><Typography variant="body2" color="text.secondary">Date de naissance</Typography></Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{new Date(selectedUser.dateOfBirth).toLocaleDateString('fr-FR')}</Typography>
+                            </Box>
+                            <Divider />
+                          </>
+                        )}
+
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}><MailIcon sx={{ fontSize: 15, color: 'text.disabled' }} /><Typography variant="body2" color="text.secondary">Email</Typography></Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedUser.email}</Typography>
+                        </Box>
+                        <Divider />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}><PhoneIcon sx={{ fontSize: 15, color: 'text.disabled' }} /><Typography variant="body2" color="text.secondary">Téléphone</Typography></Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedUser.phone || 'Non renseigné'}</Typography>
+                        </Box>
+                        {selectedUser.neighborhood && (
+                          <>
+                            <Divider />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}><PlaceIcon sx={{ fontSize: 15, color: 'text.disabled' }} /><Typography variant="body2" color="text.secondary">Quartier</Typography></Box>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedUser.neighborhood}</Typography>
+                            </Box>
+                          </>
+                        )}
+                      </Stack>
+                    </Paper>
+
+                    {/* ── FORMATION ── */}
+                    {selectedUser.role === 'candidate' && (
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px' }}>
+                        <Typography variant="caption" color="primary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1.5 }}>🎓 Formation</Typography>
+                        <Stack spacing={1.5}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">Diplôme le plus élevé</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedUser.highestDiploma || 'Non renseigné'}</Typography>
+                          </Box>
+                          <Divider />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">Établissement</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedUser.institution || 'Non renseigné'}</Typography>
+                          </Box>
+                          <Divider />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">Année d'obtention</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{selectedUser.graduationYear || 'Non renseignée'}</Typography>
+                          </Box>
+                        </Stack>
+                      </Paper>
+                    )}
+
+                    {/* ── COMPÉTENCES ── */}
+                    {selectedUser.skills?.length > 0 && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>🛠 Compétences ({selectedUser.skills.length})</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                          {selectedUser.skills.map((s: any) => (
+                            <Chip key={s.id} label={s.name} size="small" variant="outlined" color="primary" sx={{ fontWeight: 600, fontSize: '0.72rem' }} />
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* ── LANGUES ── */}
+                    {selectedUser.languages?.length > 0 && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>🌍 Langues</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                          {selectedUser.languages.map((l: any) => (
+                            <Chip key={l.id} label={l.name} size="small" color="secondary" variant="outlined" sx={{ fontWeight: 600, fontSize: '0.72rem' }} />
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* ── EXPÉRIENCES ── */}
+                    {selectedUser.experiences?.length > 0 && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', mb: 1 }}>💼 Expériences ({selectedUser.experiences.length})</Typography>
+                        <Stack spacing={1}>
+                          {selectedUser.experiences.map((exp: any) => (
+                            <Paper key={exp.id} variant="outlined" sx={{ p: 1.5, borderRadius: '10px' }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{exp.title}</Typography>
+                                  <Typography variant="caption" color="text.secondary">{exp.employer_name} · {exp.date}</Typography>
+                                </Box>
+                                <Chip label={exp.exp_type === 'verified' ? 'Vérifiée' : 'Déclarée'} size="small" color={exp.exp_type === 'verified' ? 'success' : 'default'} sx={{ fontSize: '0.65rem', fontWeight: 700 }} />
+                              </Box>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+
+                    {/* ── IDENTIFIANTS ── */}
+                    {selectedUser.username && (
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(theme.palette.secondary.main, 0.04), border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}` }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Box>
+                            <Typography variant="caption" color="secondary.main" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.07em' }}>🔑 Identifiants</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', mt: 0.5 }}>Nom d'utilisateur : {selectedUser.username}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>Mot de passe : {selectedUser.generatedPassword || '••••••••'}</Typography>
+                          </Box>
+                          <IconButton size="small" color="secondary" onClick={() => copyCredentials(selectedUser.username, selectedUser.generatedPassword || '')}>
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Paper>
+                    )}
+                  </Box>
                 </Box>
               ) : selectedUser.role === 'employer' ? (
                 <Box sx={{ p: { xs: 2.5, md: 3.5 }, bgcolor: 'background.paper' }}>
@@ -817,7 +954,7 @@ export default function AdminUsersPage() {
                   if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${selectedUser?.nom} ? Cette action est irréversible.`)) {
                     try {
                       await api.delete(`users/${selectedUser?.id}/`);
-                      setAllUsers(prev => prev.filter(u => u.id !== selectedUser?.id));
+                      fetchUsers();
                       setSelectedUser(null);
                       dispatch(showSnackbar({ message: 'Utilisateur supprimé avec succès.', severity: 'success' }));
                     } catch (err) {
@@ -1059,7 +1196,7 @@ export default function AdminUsersPage() {
                   generatedPassword: adminForm.password,
                 };
 
-                setAllUsers(prev => [...prev, newAdmin]);
+                fetchUsers();
                 setCreatedCredentials({ username, password: adminForm.password });
                 setAddAdminOpen(false);
                 setAdminForm({ nom: '', email: '', phone: '', password: '', role: 'moderator' });
@@ -1354,17 +1491,25 @@ export default function AdminUsersPage() {
           <Grid container spacing={2.5} sx={{ mt: 0.5 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
+                label="Prénom *" fullWidth
+                value={candForm.prenom}
+                onChange={e => setCandForm({ ...candForm, prenom: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
                 label="Nom *" fullWidth
                 value={candForm.nom}
                 onChange={e => setCandForm({ ...candForm, nom: e.target.value })}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
               />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12 }}>
               <TextField
-                label="Prénom *" fullWidth
-                value={candForm.prenom}
-                onChange={e => setCandForm({ ...candForm, prenom: e.target.value })}
+                label="Nom d'utilisateur *" fullWidth
+                value={candForm.username}
+                onChange={e => setCandForm({ ...candForm, username: e.target.value })}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
               />
             </Grid>
@@ -1385,6 +1530,66 @@ export default function AdminUsersPage() {
                 slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment> } }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
               />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                type="date"
+                label="Date de naissance"
+                fullWidth
+                slotProps={{ inputLabel: { shrink: true } }}
+                value={candForm.dateNaissance}
+                onChange={e => setCandForm({ ...candForm, dateNaissance: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}>
+                <InputLabel>Diplôme le plus élevé</InputLabel>
+                <Select
+                  value={candForm.diplome}
+                  label="Diplôme le plus élevé"
+                  onChange={e => setCandForm({ ...candForm, diplome: e.target.value })}
+                >
+                  <MenuItem value=""><em>Non renseigné</em></MenuItem>
+                  {['CAP', 'BEP', 'Baccalauréat', 'BTS', 'Licence', 'Master', 'Doctorat', 'Certificat professionnel', 'Sans diplôme'].map(d => (
+                    <MenuItem key={d} value={d}>{d}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Établissement" fullWidth
+                value={candForm.etablissement}
+                onChange={e => setCandForm({ ...candForm, etablissement: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                type="number"
+                label="Année d'obtention" fullWidth
+                slotProps={{ htmlInput: { min: 2000, max: 2025 } }}
+                value={candForm.anneeObtention}
+                onChange={e => setCandForm({ ...candForm, anneeObtention: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}>
+                <InputLabel>Type de profil</InputLabel>
+                <Select
+                  value={candForm.typeProfil}
+                  label="Type de profil"
+                  onChange={e => setCandForm({ ...candForm, typeProfil: e.target.value })}
+                >
+                  <MenuItem value="Freelance">Freelance / Indépendant</MenuItem>
+                  <MenuItem value="Salarié">Salarié / CDD / CDI</MenuItem>
+                  <MenuItem value="Apprenti">Apprenti / Stagiaire</MenuItem>
+                  <MenuItem value="Elève">Élève</MenuItem>
+                  <MenuItem value="Etudiant">Étudiant</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}>
@@ -1415,6 +1620,15 @@ export default function AdminUsersPage() {
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                   />
                 )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Biographie" fullWidth multiline rows={3}
+                placeholder="Décrivez brièvement le candidat..."
+                value={candForm.bio}
+                onChange={e => setCandForm({ ...candForm, bio: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
@@ -1513,12 +1727,16 @@ export default function AdminUsersPage() {
               prenom: parts.slice(1).join(' ') || '',
               email: menuUser.email || '',
               phone: menuUser.phone || '',
-              dateNaissance: '',
+              dateNaissance: menuUser.dateOfBirth || '',
+              diplome: menuUser.highestDiploma || '',
+              etablissement: menuUser.institution || '',
+              anneeObtention: menuUser.graduationYear || '',
               ville: v,
               quartier: q,
-              typeProfil: 'Freelance',
+              typeProfil: menuUser.profileType || 'Freelance',
               username: menuUser.username || '',
-              password: menuUser.generatedPassword || ''
+              password: menuUser.generatedPassword || '',
+              bio: menuUser.bio || '',
             });
             setSelectedUser(menuUser);
             setEditCandidateOpen(true);

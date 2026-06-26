@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Box, Typography, Avatar, InputBase, IconButton,
   useTheme, useMediaQuery, alpha, Badge, ClickAwayListener, Slider,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
+  Select, MenuItem, FormControl, InputLabel, TextField
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SendIcon from '@mui/icons-material/Send';
@@ -30,9 +31,10 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import PersonIcon from '@mui/icons-material/Person';
 import AddIcon from '@mui/icons-material/Add';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store';
-import { setUnreadCount, sendMessage as sendMessageAction, markAsRead, deleteMessage, deleteConversation } from '../store/slices/messagesSlice';
+import { setUnreadCount, sendMessage as sendMessageAction, markAsRead, deleteMessage, deleteConversation, broadcastMessage } from '../store/slices/messagesSlice';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import api from '../utils/api';
 
@@ -925,6 +927,8 @@ const EMOJIS = [
 ];
 
 /* ─── Main component ────────────────────────────────────────────────────── */
+let cachedAdminConversations: Conversation[] | null = null;
+
 export default function AdminMessagesPage() {
   const theme = useTheme();
   const location = useLocation();
@@ -937,7 +941,7 @@ export default function AdminMessagesPage() {
   const currentUser = useAppSelector((state) => state.auth.user);
   const authStatus = useAppSelector((state) => state.auth.status);
   const [activeId, setActiveId] = useState<string | null>(location.state?.openChatId || null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(cachedAdminConversations || []);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
   
@@ -949,8 +953,27 @@ export default function AdminMessagesPage() {
   const [newChatModalOpen, setNewChatModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [contactSearchOpen, setContactSearchOpen] = useState(false);
+  const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
+  const [broadcastTarget, setBroadcastTarget] = useState<'all'|'candidates'|'employers'>('all');
+  const [broadcastText, setBroadcastText] = useState('');
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
 
+  const broadcastInputRef = useRef<HTMLTextAreaElement>(null);
+  const insertVariable = (variable: string) => {
+    if (broadcastInputRef.current) {
+      const start = broadcastInputRef.current.selectionStart;
+      const end = broadcastInputRef.current.selectionEnd;
+      const newText = broadcastText.substring(0, start) + variable + broadcastText.substring(end);
+      setBroadcastText(newText);
+      setTimeout(() => {
+        broadcastInputRef.current?.focus();
+        broadcastInputRef.current?.setSelectionRange(start + variable.length, start + variable.length);
+      }, 0);
+    } else {
+      setBroadcastText(prev => prev + variable);
+    }
+  };
 
   const hasFetched = useRef(false);
 
@@ -1190,6 +1213,7 @@ export default function AdminMessagesPage() {
                 };
               });
               
+              cachedAdminConversations = finalMapped;
               setConversations(finalMapped);
               const totalUnread = finalMapped.reduce((sum: number, c: Conversation) => sum + c.unread, 0);
               dispatch(setUnreadCount(totalUnread));
@@ -1204,6 +1228,7 @@ export default function AdminMessagesPage() {
           }
         }
 
+        cachedAdminConversations = mapped;
         setConversations(mapped);
         const totalUnread = mapped.reduce((sum: number, c: Conversation) => sum + c.unread, 0);
         dispatch(setUnreadCount(totalUnread));
@@ -1370,7 +1395,11 @@ export default function AdminMessagesPage() {
                 });
               }
             });
-            return hasChanges ? newConvos : prev;
+            if (hasChanges) {
+              cachedAdminConversations = newConvos;
+              return newConvos;
+            }
+            return prev;
           });
         })
         .catch(console.error);
@@ -1839,6 +1868,23 @@ export default function AdminMessagesPage() {
       });
   };
 
+  const handleBroadcast = async () => {
+    if (!broadcastText.trim()) return;
+    setIsBroadcasting(true);
+    try {
+      const res = await dispatch(broadcastMessage({ target: broadcastTarget, text: broadcastText })).unwrap();
+      dispatch(showSnackbar({ message: `Message diffusé avec succès (${res.count} destinataires)`, severity: 'success' }));
+      setBroadcastModalOpen(false);
+      setBroadcastText('');
+      // Force refresh of conversations to show newly created ones
+      hasFetched.current = false;
+    } catch (err) {
+      dispatch(showSnackbar({ message: 'Erreur lors de la diffusion du message', severity: 'error' }));
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
   // WhatsApp-like bg pattern
   const chatBg = isDark
     ? 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23111B21\'/%3E%3C/svg%3E")'
@@ -1887,7 +1933,21 @@ export default function AdminMessagesPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <IconButton 
                   size="small"
+                  title="Diffusion Globale"
+                  onClick={() => setBroadcastModalOpen(true)}
+                  sx={{ 
+                    bgcolor: 'secondary.main', 
+                    color: 'white', 
+                    '&:hover': { bgcolor: 'secondary.dark' },
+                    borderRadius: '8px'
+                  }}
+                >
+                  <CampaignIcon fontSize="small" />
+                </IconButton>
+                <IconButton 
+                  size="small"
                   onClick={() => setNewChatModalOpen(true)}
+                  title="Nouvelle discussion"
                   sx={{ 
                     bgcolor: 'primary.main', 
                     color: 'white', 
@@ -2605,6 +2665,71 @@ export default function AdminMessagesPage() {
           <Button onClick={() => setDeleteDialogOpen(false)} color="inherit" sx={{ fontWeight: 600 }}>Annuler</Button>
           <Button onClick={confirmDeleteConvo} variant="contained" color="error" disableElevation sx={{ borderRadius: '8px', fontWeight: 600 }}>
             Supprimer
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={broadcastModalOpen} onClose={() => setBroadcastModalOpen(false)} sx={{ '& .MuiDialog-paper': { borderRadius: 3, width: '100%', maxWidth: 500 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>Diffusion Globale</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+          <DialogContentText>
+            Envoyez un message direct à plusieurs utilisateurs. Ce message apparaîtra comme une nouvelle discussion ou s'ajoutera à une discussion existante avec chaque destinataire.
+          </DialogContentText>
+          <FormControl fullWidth size="small">
+            <InputLabel>Destinataires</InputLabel>
+            <Select
+              value={broadcastTarget}
+              label="Destinataires"
+              onChange={(e) => setBroadcastTarget(e.target.value as any)}
+              sx={{ borderRadius: 2 }}
+            >
+              <MenuItem value="all">Tous les utilisateurs</MenuItem>
+              <MenuItem value="candidates">Candidats uniquement</MenuItem>
+              <MenuItem value="employers">Employeurs uniquement</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            inputRef={broadcastInputRef}
+            fullWidth
+            multiline
+            rows={4}
+            label="Message"
+            placeholder="Rédigez votre message ici..."
+            value={broadcastText}
+            onChange={(e) => setBroadcastText(e.target.value)}
+            slotProps={{ input: { sx: { borderRadius: 2 } } }}
+          />
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>
+              Variables disponibles (cliquez pour insérer) :
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Button size="small" variant="outlined" onClick={() => insertVariable('{prenom}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{prenom}`}</Button>
+              <Button size="small" variant="outlined" onClick={() => insertVariable('{nom}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{nom}`}</Button>
+              <Button size="small" variant="outlined" onClick={() => insertVariable('{nom_complet}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{nom_complet}`}</Button>
+              <Button size="small" variant="outlined" onClick={() => insertVariable('{email}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{email}`}</Button>
+              <Button size="small" variant="outlined" onClick={() => insertVariable('{telephone}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{telephone}`}</Button>
+              
+              {broadcastTarget === 'candidates' && (
+                <Button size="small" variant="outlined" color="secondary" onClick={() => insertVariable('{profil_type}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{profil_type}`}</Button>
+              )}
+              
+              {broadcastTarget === 'employers' && (
+                <Button size="small" variant="outlined" color="success" onClick={() => insertVariable('{entreprise}')} sx={{ textTransform: 'none', borderRadius: 2, py: 0.25 }}>{`{entreprise}`}</Button>
+              )}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setBroadcastModalOpen(false)} color="inherit" sx={{ fontWeight: 600 }}>Annuler</Button>
+          <Button 
+            onClick={handleBroadcast} 
+            color="primary" 
+            variant="contained" 
+            disabled={!broadcastText.trim() || isBroadcasting}
+            disableElevation 
+            sx={{ fontWeight: 700, borderRadius: '8px' }}
+          >
+            {isBroadcasting ? 'Envoi en cours...' : 'Envoyer'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -258,6 +258,17 @@ export default function LoginPage() {
         </Box>
       </form>
 
+      <Box sx={{ mt: 1, textAlign: 'center' }}>
+        <Button
+          variant="text"
+          color="secondary"
+          onClick={() => navigate('/')}
+          sx={{ fontWeight: 600, textTransform: 'none' }}
+        >
+          ← Retour à l'accueil
+        </Button>
+      </Box>
+
       {/* Success Dialog */}
       <Dialog 
         open={showDialog} 

@@ -20,6 +20,8 @@ interface SiteSettings {
   maintenance_mode: boolean;
   allow_registrations: boolean;
   require_email_verification: boolean;
+  notify_admins_on_registration: boolean;
+  show_empty_offers_countdown: boolean;
   seo_title: string;
   seo_description: string;
   logo: string | null;
@@ -31,6 +33,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   maintenance_mode: false,
   allow_registrations: true,
   require_email_verification: true,
+  notify_admins_on_registration: true,
+  show_empty_offers_countdown: true,
   seo_title: 'StartJobs - La plateforme des emplois pour jeunes',
   seo_description: 'Trouvez rapidement des petits boulots et des offres de stage au Cameroun.',
   logo: null,
@@ -84,8 +88,10 @@ export default function AdminSettingsPage() {
       formData.append('site_name', settings.site_name);
       formData.append('contact_email', settings.contact_email);
       formData.append('maintenance_mode', settings.maintenance_mode.toString());
-      formData.append('allow_registrations', settings.allow_registrations.toString());
-      formData.append('require_email_verification', settings.require_email_verification.toString());
+      formData.append('allow_registrations', String(settings.allow_registrations));
+      formData.append('require_email_verification', String(settings.require_email_verification));
+      formData.append('notify_admins_on_registration', String(settings.notify_admins_on_registration));
+      formData.append('show_empty_offers_countdown', String(settings.show_empty_offers_countdown));
       formData.append('seo_title', settings.seo_title);
       formData.append('seo_description', settings.seo_description);
 
@@ -258,6 +264,26 @@ export default function AdminSettingsPage() {
                   <Typography variant="body2" color="text.secondary">Exige que l'utilisateur valide son adresse email pour pouvoir postuler.</Typography>
                 </Box>
                 <Switch checked={settings.require_email_verification} onChange={handleChange('require_email_verification')} color="primary" />
+              </Box>
+
+              <Divider />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>Notifier les Admins lors des Inscriptions</Typography>
+                  <Typography variant="body2" color="text.secondary">Envoie un email à tous les administrateurs chaque fois qu'un nouveau candidat ou employeur s'inscrit.</Typography>
+                </Box>
+                <Switch checked={settings.notify_admins_on_registration} onChange={handleChange('notify_admins_on_registration')} color="primary" />
+              </Box>
+
+              <Divider />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>Afficher Compte à Rebours (Offres Vides)</Typography>
+                  <Typography variant="body2" color="text.secondary">Affiche automatiquement un compte à rebours de 30 jours pour les candidats s'il n'y a aucune offre d'emploi disponible.</Typography>
+                </Box>
+                <Switch checked={settings.show_empty_offers_countdown} onChange={handleChange('show_empty_offers_countdown')} color="secondary" />
               </Box>
             </Box>
           </Paper>

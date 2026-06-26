@@ -8,6 +8,7 @@ import VisibilityIcon from '@mui/icons-material/VisibilityOutlined';
 import SendIcon from '@mui/icons-material/SendOutlined';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { getFullMediaUrl } from "../utils/api";
 import LocationOnIcon from '@mui/icons-material/LocationOnOutlined';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -19,6 +20,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import BusinessIcon from '@mui/icons-material/Business';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
@@ -37,6 +39,23 @@ export default function CandidateDashboardPage() {
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedStatus, setSelectedStatus] = React.useState('all');
+  
+  const [dismissedActivities, setDismissedActivities] = React.useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('dismissedActivities');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [notificationToDelete, setNotificationToDelete] = React.useState<string | null>(null);
+
+  const handleDismissActivity = (id: string) => {
+    const updated = [...dismissedActivities, id];
+    setDismissedActivities(updated);
+    localStorage.setItem('dismissedActivities', JSON.stringify(updated));
+    setNotificationToDelete(null);
+  };
 
   const { items: allApplications, status: appsStatus } = useAppSelector((state: any) => state.applications);
   const { items: allOffers, status: offersStatus } = useAppSelector((state: any) => state.offers);
@@ -77,7 +96,7 @@ export default function CandidateDashboardPage() {
   }, [allApplications, candidateProfile, completedMissions, acceptedCount]);
 
   const reputationLevel = React.useMemo(() => {
-    const total = completedMissions + acceptedCount;
+    const total = Math.max(completedMissions + acceptedCount, candidateProfile?.total_missions || 0);
     if (total === 0) {
       return {
         name: 'Débutant',
@@ -86,19 +105,19 @@ export default function CandidateDashboardPage() {
         badge: 'Top 50%',
         color: 'secondary' as const
       };
-    } else if (total === 1) {
+    } else if (total < 5) {
       return {
         name: 'Niveau Bronze',
-        progress: 40,
-        text: 'Complétez encore 2 missions pour débloquer le badge Argent !',
+        progress: Math.min(40 + (total * 10), 74),
+        text: `Encore ${5 - total} mission${5 - total > 1 ? 's' : ''} pour débloquer le badge Argent !`,
         badge: 'Top 30%',
         color: 'warning' as const
       };
-    } else if (total === 2) {
+    } else if (total < 15) {
       return {
         name: 'Niveau Argent',
-        progress: 75,
-        text: 'Plus qu\'une seule mission réussie pour atteindre le Niveau Or ! 🚀',
+        progress: Math.min(75 + ((total - 5) * 2.5), 99),
+        text: `Plus que ${15 - total} mission${15 - total > 1 ? 's' : ''} réussie${15 - total > 1 ? 's' : ''} pour atteindre le Niveau Or ! 🚀`,
         badge: 'Top 15%',
         color: 'info' as const
       };
@@ -237,21 +256,74 @@ export default function CandidateDashboardPage() {
     });
 
     if (list.length === 0) {
+      const hasOffers = allOffers && allOffers.length > 0;
       list.push({
         id: 'default_1',
-        text: 'Bienvenue sur StartJobs ! Consultez nos nouvelles offres.',
+        text: hasOffers 
+          ? 'Bienvenue sur StartJobs ! Consultez nos nouvelles offres.' 
+          : 'Bienvenue sur StartJobs ! Il n\'y a pas encore d\'offres disponibles pour le moment, mais restez à l\'écoute.',
         time: 'À l\'instant',
         highlight: true,
         type: 'info',
       });
     }
     
-    // Sort by most recent
-    return list.slice(0, 5);
-  }, [myCandidatures]);
+    // Sort by most recent and filter out dismissed
+    return list.filter(act => !dismissedActivities.includes(act.id)).slice(0, 5);
+  }, [myCandidatures, allOffers, dismissedActivities]);
+
+  // Profile completion check
+  const isProfileIncomplete = React.useMemo(() => {
+    if (!candidateProfile) return true;
+    const hasBio = !!(candidateProfile.bio?.trim());
+    const hasNeighborhood = !!(candidateProfile.neighborhood?.trim());
+    const hasSkills = candidateProfile.skills?.length > 0;
+    const hasPhoto = !!(candidateProfile.photo);
+    return !hasBio || !hasNeighborhood || !hasSkills || !hasPhoto;
+  }, [candidateProfile]);
 
   return (
     <Box sx={{ pb: { xs: 12, md: 4 } }}>
+      {/* ─── PROFILE COMPLETION BANNER ──────────────────────────────────────── */}
+      {isProfileIncomplete && (
+        <Box
+          sx={{
+            mx: { xs: 2, md: 4 },
+            mt: { xs: 2, md: 3 },
+            mb: -1,
+            p: 2,
+            borderRadius: 3,
+            background: isDark
+              ? `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.18)}, ${alpha(theme.palette.warning.dark, 0.1)})`
+              : `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.12)}, ${alpha(theme.palette.warning.light, 0.07)})`,
+            border: `1px solid ${alpha(theme.palette.warning.main, 0.4)}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
+        >
+          <WarningAmberIcon sx={{ color: 'warning.main', flexShrink: 0 }} />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '0.95rem' }}>
+              ⚠️ Votre profil est incomplet !
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+              Complétez votre profil (photo, bio, compétences, quartier) pour maximiser vos chances d'être recruté.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="small"
+            color="warning"
+            onClick={() => navigate('/profile')}
+            sx={{ fontWeight: 700, borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Compléter mon profil
+          </Button>
+        </Box>
+      )}
+
       {/* ─── HERO / GREETING ────────────────────────────────────────────────────────── */}
       <Box
         sx={{
@@ -418,11 +490,18 @@ export default function CandidateDashboardPage() {
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {activities.length === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                Aucune nouvelle notification.
+              </Typography>
+            )}
             {activities.map((act) => (
               <Box
                 key={act.id}
                 sx={{
+                  position: 'relative',
                   p: 2,
+                  pr: 5,
                   borderRadius: 3,
                   bgcolor: act.highlight 
                     ? (isDark ? alpha(theme.palette.primary.main, 0.05) : alpha(theme.palette.primary.main, 0.02))
@@ -433,6 +512,13 @@ export default function CandidateDashboardPage() {
                   gap: 0.5
                 }}
               >
+                <IconButton
+                  size="small"
+                  onClick={() => setNotificationToDelete(act.id)}
+                  sx={{ position: 'absolute', top: 6, right: 6, opacity: 0.6, '&:hover': { opacity: 1, bgcolor: alpha(theme.palette.error.main, 0.1), color: 'error.main' } }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
                 <Typography sx={{ fontSize: '0.925rem', fontWeight: act.highlight ? 600 : 400 }}>
                   {act.text}
                 </Typography>
@@ -546,7 +632,7 @@ export default function CandidateDashboardPage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 2 }}>
                       <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                         <Avatar
-                          src={candidacy.avatar}
+                          src={getFullMediaUrl(candidacy.avatar)}
                           sx={{
                             width: 44,
                             height: 44,
@@ -741,6 +827,20 @@ export default function CandidateDashboardPage() {
           </Button>
           <Button onClick={handleConfirmAction} variant="contained" color="error" sx={{ fontWeight: 700, borderRadius: '8px' }}>
             Confirmer
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={!!notificationToDelete} onClose={() => setNotificationToDelete(null)} sx={{ '& .MuiDialog-paper': { borderRadius: 3 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>Supprimer la notification</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Êtes-vous sûr de vouloir supprimer cette notification ? Cette action la masquera définitivement de votre tableau de bord.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setNotificationToDelete(null)} color="inherit" sx={{ fontWeight: 600 }}>Annuler</Button>
+          <Button onClick={() => notificationToDelete && handleDismissActivity(notificationToDelete)} color="error" variant="contained" disableElevation sx={{ fontWeight: 700, borderRadius: '8px' }}>
+            Supprimer
           </Button>
         </DialogActions>
       </Dialog>

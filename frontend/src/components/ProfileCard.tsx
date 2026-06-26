@@ -38,6 +38,7 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
         {/* Header row */}
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
           <Avatar
+            src={worker.photo || undefined}
             sx={{
               width: 44,
               height: 44,
@@ -48,7 +49,7 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
               borderRadius: '10px', // Shadcn: square avatars
             }}
           >
-            {worker.photo}
+            {!worker.photo ? `${worker.prenom[0] || ''}${(worker.nom || '')[0] || ''}`.toUpperCase() : ''}
           </Avatar>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>

@@ -178,7 +178,16 @@ export default function SearchBar() {
                       Domaine d'activité
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 1,
+                    maxHeight: 130,
+                    overflowY: 'auto',
+                    pr: 1,
+                    '&::-webkit-scrollbar': { width: '4px' },
+                    '&::-webkit-scrollbar-thumb': { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', borderRadius: '4px' }
+                  }}>
                     {DOMAINES.map((d) => (
                       <FilterChip
                         key={d}

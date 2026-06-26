@@ -422,7 +422,7 @@ export default function EmployerOnboardingPage() {
         <Button
           variant="contained"
           disabled={loading}
-          endIcon={step < QUESTIONS.length - 1 ? <ArrowForwardIcon /> : <CheckIcon />}
+          endIcon={loading ? <CircularProgress size={20} color="inherit" /> : (step < QUESTIONS.length - 1 ? <ArrowForwardIcon /> : <CheckIcon />)}
           className="pressable"
           onClick={handleNext}
           sx={{ flex: 2 }}

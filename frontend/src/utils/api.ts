@@ -12,6 +12,13 @@ const getBaseURL = () => {
   return `${protocol}//${host}:${port}/api/`;
 };
 
+export const getFullMediaUrl = (url: string | null | undefined) => {
+  if (!url) return undefined;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const baseUrl = getBaseURL().replace('/api/', ''); // Remove /api/
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const api = axios.create({
   baseURL: getBaseURL(),
 });
@@ -43,5 +50,7 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const fetcher = (url: string) => api.get(url).then(res => res.data);
 
 export default api;

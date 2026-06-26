@@ -524,6 +524,10 @@ export default function WizardPage() {
     const profileData = {
       bio: data.bio || '',
       phone: data.phone || '',
+      date_of_birth: data.dateNaissance || null,
+      highest_diploma: data.diplome || '',
+      institution: data.etablissement || '',
+      graduation_year: data.annee || '',
       neighborhood: data.quartier || '',
       city: data.ville || '',
       distance_max: data.rayon || 3,
@@ -562,6 +566,7 @@ export default function WizardPage() {
       .catch((err: any) => {
         setLoading(false);
         if (err === 'REQUIRES_EMAIL_VERIFICATION') {
+           dispatch(resetWizard());
            setEmailVerificationSent(true);
         } else {
            dispatch(showSnackbar({ message: 'Erreur: ' + (err.message || err || 'Création impossible'), severity: 'error' }));
@@ -680,7 +685,7 @@ export default function WizardPage() {
         <Button
           variant="contained"
           disabled={loading}
-          endIcon={currentStep < totalSteps - 1 ? <ArrowForwardIcon /> : <CheckIcon />}
+          endIcon={loading ? <CircularProgress size={20} color="inherit" /> : (currentStep < totalSteps - 1 ? <ArrowForwardIcon /> : <CheckIcon />)}
           className="pressable"
           onClick={handleNext}
           sx={{ flex: 2 }}

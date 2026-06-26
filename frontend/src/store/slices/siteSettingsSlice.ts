@@ -6,6 +6,7 @@ export interface SiteSettingsState {
   logo: string | null;
   allow_registrations: boolean;
   maintenance_mode: boolean;
+  show_empty_offers_countdown?: boolean;
   seo_description?: string;
   seo_keywords?: string;
   loading: boolean;
@@ -17,6 +18,7 @@ const initialState: SiteSettingsState = {
   logo: null,
   allow_registrations: true,
   maintenance_mode: false,
+  show_empty_offers_countdown: true,
   seo_description: '',
   seo_keywords: '',
   loading: true,
@@ -55,6 +57,7 @@ const siteSettingsSlice = createSlice({
         state.logo = action.payload.logo;
         state.allow_registrations = action.payload.allow_registrations;
         state.maintenance_mode = action.payload.maintenance_mode;
+        state.show_empty_offers_countdown = action.payload.show_empty_offers_countdown ?? true;
         state.seo_description = action.payload.seo_description;
         state.seo_keywords = action.payload.seo_keywords;
       })

@@ -176,6 +176,8 @@ class AdminSettingsView(APIView):
             'maintenance_mode': s.maintenance_mode,
             'allow_registrations': s.allow_registrations,
             'require_email_verification': s.require_email_verification,
+            'notify_admins_on_registration': s.notify_admins_on_registration,
+            'show_empty_offers_countdown': s.show_empty_offers_countdown,
             'seo_title': s.seo_title,
             'seo_description': s.seo_description,
             'logo': request.build_absolute_uri(s.logo.url) if s.logo else None,
@@ -195,6 +197,10 @@ class AdminSettingsView(APIView):
             s.allow_registrations = str(data['allow_registrations']).lower() == 'true'
         if 'require_email_verification' in data:
             s.require_email_verification = str(data['require_email_verification']).lower() == 'true'
+        if 'notify_admins_on_registration' in data:
+            s.notify_admins_on_registration = str(data['notify_admins_on_registration']).lower() == 'true'
+        if 'show_empty_offers_countdown' in data:
+            s.show_empty_offers_countdown = str(data['show_empty_offers_countdown']).lower() == 'true'
             
         if 'logo' in request.FILES:
             s.logo = request.FILES['logo']
@@ -323,13 +329,19 @@ class AdminUpdateUserView(APIView):
                 profile.phone = profile_data['phone']
             if 'generated_password' in profile_data:
                 profile.generated_password = profile_data['generated_password']
-            if 'ville' in profile_data or 'quartier' in profile_data:
-                v = profile_data.get('ville', '')
-                q = profile_data.get('quartier', '')
-                if v and q:
-                    profile.neighborhood = f"{v} - {q}"
-                elif v or q:
-                    profile.neighborhood = v or q
+            if 'bio' in profile_data:
+                profile.bio = profile_data['bio']
+            if 'profile_type' in profile_data:
+                profile.profile_type = profile_data['profile_type']
+            # Handle ville / quartier as neighborhood
+            v = profile_data.get('ville', '')
+            q = profile_data.get('quartier', '')
+            if v and q:
+                profile.neighborhood = f"{v} - {q}"
+            elif v or q:
+                profile.neighborhood = v or q
+            elif 'neighborhood' in profile_data:
+                profile.neighborhood = profile_data['neighborhood']
                 
             profile.save()
 

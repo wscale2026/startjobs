@@ -28,6 +28,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store';
 import { logout } from '../store/slices/authSlice';
 import { setQuartier } from '../store/slices/locationSlice';
+import { getFullMediaUrl } from '../utils/api';
 import { useThemeMode } from '../theme/ThemeContext';
 import QUARTIERS from '../mocks/quartiers';
 import LocationChip from '../components/LocationChip';
@@ -586,8 +587,8 @@ export default function AppLayout() {
               <Box sx={{ position: 'relative', flexShrink: 0 }}>
                 <Avatar
                   src={isEmployer 
-                    ? (user?.employer_profile?.logo || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=150&q=80')
-                    : (user?.candidate_profile?.photo || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80')}
+                    ? getFullMediaUrl(user?.employer_profile?.logo || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=150&q=80')
+                    : getFullMediaUrl(user?.candidate_profile?.photo || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80')}
                   sx={{ width: 40, height: 40, borderRadius: '12px' }}
                 />
                 <Box

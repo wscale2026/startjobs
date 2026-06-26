@@ -10,7 +10,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import api from '../utils/api';
+import useSWR from 'swr';
+import { fetcher } from '../utils/api';
 
 const dataOffersByDay = [
   { name: 'Lun', offres: 45 },
@@ -69,20 +70,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function AdminDashboardPage() {
   const theme = useTheme();
   
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-
-  useEffect(() => {
-    api.get('/admin/dashboard/')
-      .then(res => {
-        setStats(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, []);
+  const { data: stats, error } = useSWR('/admin/dashboard/', fetcher);
+  const loading = !stats && !error;
 
   if (loading || !stats) {
     return (

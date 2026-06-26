@@ -877,20 +877,25 @@ function ConvoItem({ conv, active, onClick }: { conv: Conversation; active: bool
       {/* Text content */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 0.25 }}>
-          <Typography
-            sx={{
-              fontSize: '0.9375rem',
-              fontWeight: conv.unread > 0 ? 700 : 500,
-              letterSpacing: '-0.01em',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              mr: 1,
-            }}
-          >
-            {conv.name}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, mr: 1, gap: 0.75 }}>
+            <Typography
+              sx={{
+                fontSize: '0.9375rem',
+                fontWeight: conv.unread > 0 ? 700 : 500,
+                letterSpacing: '-0.01em',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {conv.name}
+            </Typography>
+            {conv.role === 'Administrateur' && (
+              <Box sx={{ bgcolor: '#DC2626', color: '#fff', px: 0.75, py: 0.25, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, flexShrink: 0 }}>
+                ADMIN
+              </Box>
+            )}
+          </Box>
           <Typography
             variant="caption"
             sx={{
@@ -968,7 +973,7 @@ export default function MessagesPage() {
   const currentRole = useAppSelector((state) => state.auth.role);
   const routerNavigate = useNavigate();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(cachedConversations || []);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
@@ -1082,7 +1087,7 @@ export default function MessagesPage() {
           return {
             id: String(convo.id),
             name: (otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
-            role: otherParticipant?.employer_profile ? 'Employeur' : 'Candidat',
+            role: ['admin', 'super_admin'].includes(otherParticipant?.role) ? 'Administrateur' : (otherParticipant?.employer_profile ? 'Employeur' : 'Candidat'),
             lastMsg: lastMessageText || 'Aucun message',
             time: lastMessageTime,
             unread: convoUnreadCount,
@@ -1206,7 +1211,7 @@ export default function MessagesPage() {
                 return {
                   id: String(convo.id),
                   name: (otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
-                  role: otherParticipant?.employer_profile ? 'Employeur' : 'Candidat',
+                  role: ['admin', 'super_admin'].includes(otherParticipant?.role) ? 'Administrateur' : (otherParticipant?.employer_profile ? 'Employeur' : 'Candidat'),
                   lastMsg: lastMessageText || 'Aucun message',
                   time: lastMessageTime,
                   unread: convoUnreadCount,
@@ -1218,6 +1223,7 @@ export default function MessagesPage() {
                 };
               });
               
+              cachedConversations = finalMapped;
               setConversations(finalMapped);
               const totalUnread = finalMapped.reduce((sum: number, c: Conversation) => sum + c.unread, 0);
               dispatch(setUnreadCount(totalUnread));
@@ -1232,6 +1238,7 @@ export default function MessagesPage() {
           }
         }
 
+        cachedConversations = mapped;
         setConversations(mapped);
         const totalUnread = mapped.reduce((sum: number, c: Conversation) => sum + c.unread, 0);
         dispatch(setUnreadCount(totalUnread));
@@ -1253,14 +1260,9 @@ export default function MessagesPage() {
       if (isDesktop && cachedConversations.length > 0 && !activeId) {
         setActiveId(cachedConversations[0].id);
       }
-      // Still fetch in background to get new messages
-      loadData().then(() => {
-         cachedConversations = conversations;
-      });
+      loadData();
     } else {
-      loadData().then(() => {
-         // cache will be updated by the next render loop or directly inside loadData
-      });
+      loadData();
     }
   }, [currentUser, authStatus, isDesktop, dispatch]);
 
@@ -1416,7 +1418,7 @@ export default function MessagesPage() {
                 newConvos.unshift({
                   id: String(convo.id),
                   name: otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User',
-                  role: otherParticipant?.employer_profile ? 'Employeur' : 'Candidat',
+                  role: ['admin', 'super_admin'].includes(otherParticipant?.role) ? 'Administrateur' : (otherParticipant?.employer_profile ? 'Employeur' : 'Candidat'),
                   lastMsg: mappedMessages.length > 0 ? mappedMessages[mappedMessages.length - 1].text : 'Aucun message',
                   time: mappedMessages.length > 0 ? mappedMessages[mappedMessages.length - 1].time : '12:00',
                   unread: convoUnreadCount,
@@ -1837,7 +1839,7 @@ export default function MessagesPage() {
           const newConvoItem: Conversation = {
             id: newConvoId,
             name: user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : user.username,
-            role: user.role === 'employer' ? 'Employeur' : 'Candidat',
+            role: ['admin', 'super_admin'].includes(user.role) ? 'Administrateur' : (user.role === 'employer' ? 'Employeur' : 'Candidat'),
             lastMsg: 'Nouvelle discussion',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unread: 0,
@@ -2109,9 +2111,16 @@ export default function MessagesPage() {
                   )}
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                    {activeConv.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '1rem' }}>
+                      {activeConv.name}
+                    </Typography>
+                    {activeConv.role === 'Administrateur' && (
+                      <Box sx={{ bgcolor: '#DC2626', color: '#fff', px: 0.75, py: 0.25, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800 }}>
+                        ADMIN
+                      </Box>
+                    )}
+                  </Box>
                   <Typography variant="caption" sx={{ fontSize: '0.75rem', color: activeConv.online ? '#25D366' : 'text.secondary' }}>
                     {activeConv.online ? 'En ligne' : activeConv.role}
                   </Typography>

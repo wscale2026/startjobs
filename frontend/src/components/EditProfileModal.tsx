@@ -19,6 +19,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import TranslateIcon from '@mui/icons-material/Translate';
 import BuildIcon from '@mui/icons-material/Build';
+import SchoolIcon from '@mui/icons-material/School';
 import { useAppDispatch, useAppSelector } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { updateProfile } from '../store/slices/authSlice';
@@ -58,10 +59,15 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
   // Form State
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [telephone, setTelephone] = useState('');
+  const [dateNaissance, setDateNaissance] = useState('');
+  const [diplome, setDiplome] = useState('');
+  const [etablissement, setEtablissement] = useState('');
+  const [anneeObtention, setAnneeObtention] = useState('');
   const [ville, setVille] = useState('');
   const [bio, setBio] = useState('');
   const [quartier, setQuartier] = useState('');
@@ -123,7 +129,9 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
       } else {
         setNom(user.last_name || '');
         setPrenom(user.first_name || '');
-        setTelephone('');
+        setUsername(user.username || '');
+        setTelephone(user.candidate_profile?.phone || '');
+        setDateNaissance(user.candidate_profile?.date_of_birth || '');
         setVille('Douala');
         setQuartier(user.candidate_profile?.neighborhood || '');
         setLatitude(user.candidate_profile?.latitude);
@@ -136,6 +144,9 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
         setDistanceMax(user.candidate_profile?.distance_max || 3);
         setIsAvailable(user.candidate_profile?.is_available ?? true);
         setProfileType(user.candidate_profile?.profile_type || 'Freelance');
+        setDiplome(user.candidate_profile?.highest_diploma || '');
+        setEtablissement(user.candidate_profile?.institution || '');
+        setAnneeObtention(user.candidate_profile?.graduation_year || '');
         setExperiences(
           (user.candidate_profile?.experiences || []).map((e: any) => ({
             id: String(e.id),
@@ -179,6 +190,7 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
 
     const userData: any = {};
     if (email !== user.email) userData.email = email;
+    if (username !== user.username && !isEmployer) userData.username = username;
     if (isEmployer) {
       if (nom !== user.employer_profile?.company_name) userData.first_name = nom;
     } else {
@@ -199,6 +211,11 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
       profileData.recruits_per_month = recrutements;
       profileData.description = bio;
     } else {
+      profileData.phone = telephone;
+      profileData.date_of_birth = dateNaissance || null;
+      profileData.highest_diploma = diplome;
+      profileData.institution = etablissement;
+      profileData.graduation_year = anneeObtention;
       profileData.neighborhood = quartier;
       if (latitude) profileData.latitude = latitude;
       if (longitude) profileData.longitude = longitude;
@@ -336,6 +353,12 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField label="Nom" value={nom} onChange={e => setNom(e.target.value)} fullWidth variant="outlined" />
                   </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField label="Nom d'utilisateur" value={username} onChange={e => setUsername(e.target.value)} fullWidth variant="outlined" />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField type="date" label="Date de naissance" slotProps={{ inputLabel: { shrink: true } }} value={dateNaissance} onChange={e => setDateNaissance(e.target.value)} fullWidth variant="outlined" />
+                  </Grid>
                   <Grid size={{ xs: 12 }}>
                     <FormControlLabel
                       control={<Switch checked={isAvailable} onChange={e => setIsAvailable(e.target.checked)} color="success" />}
@@ -346,6 +369,33 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
               )}
             </Grid>
           </Box>
+
+          {/* ── Section: Formation ── */}
+          {!isEmployer && (
+            <Box sx={sectionStyle}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
+                <SchoolIcon fontSize="small" /> Formation
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Diplôme le plus élevé</InputLabel>
+                    <Select value={diplome} label="Diplôme le plus élevé" onChange={e => setDiplome(e.target.value)}>
+                      {['CAP', 'BEP', 'Baccalauréat', 'BTS', 'Licence', 'Master', 'Doctorat', 'Certificat professionnel', 'Sans diplôme'].map(d => (
+                        <MenuItem key={d} value={d}>{d}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 5 }}>
+                  <TextField label="Établissement" value={etablissement} onChange={e => setEtablissement(e.target.value)} fullWidth variant="outlined" placeholder="ex: Lycée Technique de Douala" />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 3 }}>
+                  <TextField label="Année" type="number" value={anneeObtention} onChange={e => setAnneeObtention(e.target.value)} fullWidth variant="outlined" slotProps={{ htmlInput: { min: 2000, max: 2025 } }} />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
 
           {/* ── Section: Contact & Sécurité ── */}
           <Box sx={sectionStyle}>

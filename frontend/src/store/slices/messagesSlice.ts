@@ -9,6 +9,14 @@ export const sendMessage = createAsyncThunk(
   }
 );
 
+export const broadcastMessage = createAsyncThunk(
+  'messages/broadcastMessage',
+  async ({ target, text }: { target: 'all' | 'candidates' | 'employers'; text: string }) => {
+    const res = await api.post('messages/broadcast/', { target, text });
+    return res.data;
+  }
+);
+
 export const markAsRead = createAsyncThunk(
   'messages/markAsRead',
   async (conversationId: string) => {

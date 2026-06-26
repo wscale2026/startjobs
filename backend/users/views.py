@@ -88,8 +88,193 @@ class RegisterView(generics.CreateAPIView):
         if s.require_email_verification:
             user = User.objects.get(username=response.data.get('username'))
             send_verification_email(user, s)
+        else:
+            user = User.objects.get(username=response.data.get('username'))
+            send_welcome_email(user, s)
+        
+        # Notify admins if the setting is enabled
+        if s.notify_admins_on_registration:
+            user = User.objects.get(username=response.data.get('username'))
+            notify_admins_new_registration(user, s)
                 
         return response
+
+def send_welcome_email(user, site_settings):
+    frontend_base = settings.FRONTEND_URL.rstrip('/') if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:5173'
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                background-color: #f4f7f6;
+                margin: 0;
+                padding: 0;
+            }}
+            .container {{
+                max-width: 600px;
+                margin: 40px auto;
+                background-color: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                overflow: hidden;
+            }}
+            .header {{
+                background-color: #0b1120;
+                padding: 40px 20px;
+                text-align: center;
+            }}
+            .content {{
+                padding: 40px 40px;
+                color: #333333;
+                line-height: 1.6;
+            }}
+            .content h2 {{
+                color: #0b1120;
+                font-size: 22px;
+                margin-top: 0;
+                font-weight: 700;
+            }}
+            .button-container {{
+                text-align: center;
+                margin: 40px 0;
+            }}
+            .button {{
+                background-color: #2563eb;
+                color: #ffffff !important;
+                text-decoration: none;
+                padding: 14px 32px;
+                border-radius: 8px;
+                font-weight: 600;
+                display: inline-block;
+            }}
+            .footer {{
+                background-color: #f8fafc;
+                padding: 24px;
+                text-align: center;
+                color: #64748b;
+                font-size: 13px;
+                border-top: 1px solid #e2e8f0;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="color: white; margin: 0; font-size: 28px; letter-spacing: -0.5px;">{site_settings.site_name}</h1>
+            </div>
+            <div class="content">
+                <h2>Bienvenue {user.first_name or user.username} ! 🎉</h2>
+                <p>Nous sommes ravis de vous compter parmi les membres de <strong>{site_settings.site_name}</strong>.</p>
+                <p>Votre compte a été créé avec succès et est immédiatement actif. Vous pouvez dès à présent explorer toutes nos opportunités et services.</p>
+                
+                <div class="button-container">
+                    <a href="{frontend_base}/" class="button">Accéder à mon compte</a>
+                </div>
+                
+                <p>Si vous avez la moindre question, n'hésitez pas à nous contacter à {site_settings.contact_email}.</p>
+                <p>À très bientôt sur notre plateforme !</p>
+                <p style="margin-bottom: 0;">L'équipe <strong>{site_settings.site_name}</strong></p>
+            </div>
+            <div class="footer">
+                <p style="margin: 0;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                <p style="margin: 5px 0 0 0;">&copy; 2026 {site_settings.site_name}. Tous droits réservés.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    try:
+        send_mail(
+            subject=f"Bienvenue sur {site_settings.site_name} ! 🎉",
+            message=f"Bonjour {user.first_name or user.username},\n\nMerci de vous être inscrit sur {site_settings.site_name}. Votre compte est maintenant actif.\n\nL'équipe {site_settings.site_name}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+            html_message=html_message
+        )
+    except Exception as e:
+        print(f"Error sending welcome email to {user.email}: {e}")
+
+def notify_admins_new_registration(user, site_settings):
+    """Envoie une notification email à tous les admins lors d'une nouvelle inscription."""
+    from django.core.mail import send_mail
+    from django.conf import settings
+    
+    role_display = 'Candidat' if user.role == 'candidate' else 'Employeur'
+    role_emoji = '🧑‍💼' if user.role == 'candidate' else '🏢'
+    
+    # Get profile details
+    extra_info = ''
+    if user.role == 'candidate' and hasattr(user, 'candidate_profile'):
+        p = user.candidate_profile
+        extra_info = f"<li><strong>Type de profil :</strong> {p.profile_type or 'Non précisé'}</li>"
+        if p.neighborhood:
+            extra_info += f"<li><strong>Quartier :</strong> {p.neighborhood}</li>"
+    elif user.role == 'employer' and hasattr(user, 'employer_profile'):
+        p = user.employer_profile
+        if p.company_name:
+            extra_info = f"<li><strong>Entreprise :</strong> {p.company_name}</li>"
+        if p.city:
+            extra_info += f"<li><strong>Ville :</strong> {p.city}</li>"
+        if p.industry:
+            extra_info += f"<li><strong>Secteur :</strong> {p.industry}</li>"
+
+    frontend_base = settings.FRONTEND_URL.rstrip('/') if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:5173'
+    
+    html_message = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; background:#f4f7f6; margin:0; padding:0;">
+        <div style="max-width:560px; margin:30px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+            <div style="background:#0b1120; padding:28px 30px; text-align:center;">
+                <h2 style="color:#fff; margin:0; font-size:20px;">{site_settings.site_name} — Nouvelle inscription {role_emoji}</h2>
+            </div>
+            <div style="padding:30px 34px; color:#333;">
+                <p style="font-size:15px; margin-top:0;">Un nouveau <strong>{role_display}</strong> vient de s'inscrire sur la plateforme.</p>
+                <div style="background:#f8fafc; border-left:4px solid #2563eb; border-radius:6px; padding:16px 20px; margin:20px 0;">
+                    <ul style="margin:0; padding-left:16px; line-height:1.9;">
+                        <li><strong>Nom :</strong> {user.get_full_name() or user.username}</li>
+                        <li><strong>Nom d'utilisateur :</strong> {user.username}</li>
+                        <li><strong>Email :</strong> {user.email}</li>
+                        <li><strong>Rôle :</strong> {role_display}</li>
+                        {extra_info}
+                    </ul>
+                </div>
+                <div style="text-align:center; margin:24px 0;">
+                    <a href="{frontend_base}/admin/users" style="background:#2563eb; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:600; display:inline-block;">
+                        Voir dans l'administration
+                    </a>
+                </div>
+                <p style="font-size:13px; color:#64748b; margin-bottom:0;">Cet email vous a été envoyé car la notification d'inscription est activée dans les paramètres de {site_settings.site_name}.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Get all staff/admin users with emails
+    admin_emails = list(
+        User.objects.filter(is_staff=True, is_active=True).exclude(email='').values_list('email', flat=True)
+    )
+    
+    if not admin_emails:
+        return
+    
+    try:
+        send_mail(
+            subject=f"[{site_settings.site_name}] Nouvel(le) {role_display} inscrit(e) : {user.get_full_name() or user.username}",
+            message=f"Nouveau {role_display} inscrit : {user.get_full_name() or user.username} ({user.email})",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=admin_emails,
+            fail_silently=True,
+            html_message=html_message
+        )
+    except Exception as e:
+        print(f"Error sending admin notification: {e}")
+
 def send_verification_email(user, site_settings):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     # Generate and store token in DB — immune to last_login / password changes
@@ -436,4 +621,5 @@ class PublicSettingsView(APIView):
             'require_email_verification': s.require_email_verification,
             'seo_title': s.seo_title,
             'seo_description': s.seo_description,
+            'show_empty_offers_countdown': s.show_empty_offers_countdown,
         })

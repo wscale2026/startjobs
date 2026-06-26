@@ -92,7 +92,7 @@ export default function SearchPage() {
           user_id: c.user?.id,
           prenom: c.user?.first_name || 'Candidat',
           nom: c.user?.last_name || '',
-          photo: c.photo || 'https://via.placeholder.com/150',
+          photo: c.photo || '',
           photoColor: theme.palette.secondary.main,
           quartier: candidateQuartier || 'Non renseigné',
           distance,

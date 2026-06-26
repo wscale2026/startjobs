@@ -31,6 +31,11 @@ interface User {
   candidate_profile?: {
     id: number;
     bio: string;
+    phone?: string;
+    date_of_birth?: string;
+    highest_diploma?: string;
+    institution?: string;
+    graduation_year?: string;
     neighborhood: string;
     latitude?: number;
     longitude?: number;
@@ -89,8 +94,10 @@ export const login = createAsyncThunk('auth/login', async (credentials: any, { r
     // 2. Fetch user profile
     const userRes = await api.get('users/me/');
     const user = userRes.data;
-    if (!user.role && (user.is_superuser || user.is_staff)) {
-      user.role = 'admin'; // Fallback just in case
+    if (user.is_superuser) {
+      user.role = 'super_admin';
+    } else if (user.is_staff && (!user.role || user.role === 'candidate')) {
+      user.role = 'admin';
     }
     return user;
   } catch (error: any) {
@@ -139,14 +146,23 @@ export const register = createAsyncThunk('auth/register', async (userData: any, 
     // 3. Fetch profile
     const userRes = await api.get('users/me/');
     const user = userRes.data;
-    if (!user.role && (user.is_superuser || user.is_staff)) {
-      user.role = 'admin'; // Fallback just in case
+    if (user.is_superuser) {
+      user.role = 'super_admin';
+    } else if (!user.role && user.is_staff) {
+      user.role = 'admin';
     }
     return user;
   } catch (error: any) {
     const detail = error.response?.data?.detail || '';
     if (detail.toLowerCase().includes('vérifier') || detail.toLowerCase().includes('email')) {
       return rejectWithValue('REQUIRES_EMAIL_VERIFICATION');
+    }
+    // Check for field-level validation errors (duplicate email/username)
+    if (error.response?.data && typeof error.response.data === 'object' && !error.response.data.detail) {
+      const firstKey = Object.keys(error.response.data)[0];
+      const firstError = error.response.data[firstKey];
+      const errorMsg = Array.isArray(firstError) ? firstError[0] : firstError;
+      return rejectWithValue(typeof errorMsg === 'string' ? errorMsg : 'Erreur de validation');
     }
     
     return rejectWithValue(detail || 'Erreur lors de l\'inscription');
@@ -157,8 +173,10 @@ export const fetchCurrentUser = createAsyncThunk('auth/fetchCurrentUser', async 
   if (!localStorage.getItem('access_token')) throw new Error('No token');
   const response = await api.get('users/me/');
   const user = response.data;
-  if (!user.role && (user.is_superuser || user.is_staff)) {
-    user.role = 'admin'; // Fallback just in case
+  if (user.is_superuser) {
+    user.role = 'super_admin';
+  } else if (!user.role && user.is_staff) {
+    user.role = 'admin';
   }
   return user;
 });
