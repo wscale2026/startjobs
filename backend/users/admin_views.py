@@ -177,6 +177,7 @@ class AdminSettingsView(APIView):
             'allow_registrations': s.allow_registrations,
             'require_email_verification': s.require_email_verification,
             'notify_admins_on_registration': s.notify_admins_on_registration,
+            'notify_admins_on_employer_registration': s.notify_admins_on_employer_registration,
             'show_empty_offers_countdown': s.show_empty_offers_countdown,
             'seo_title': s.seo_title,
             'seo_description': s.seo_description,
@@ -199,6 +200,8 @@ class AdminSettingsView(APIView):
             s.require_email_verification = str(data['require_email_verification']).lower() == 'true'
         if 'notify_admins_on_registration' in data:
             s.notify_admins_on_registration = str(data['notify_admins_on_registration']).lower() == 'true'
+        if 'notify_admins_on_employer_registration' in data:
+            s.notify_admins_on_employer_registration = str(data['notify_admins_on_employer_registration']).lower() == 'true'
         if 'show_empty_offers_countdown' in data:
             s.show_empty_offers_countdown = str(data['show_empty_offers_countdown']).lower() == 'true'
             

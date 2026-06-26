@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 
-export type UserRole = 'employer' | 'candidate' | 'admin' | 'staff' | null;
+export type UserRole = 'employer' | 'candidate' | 'admin' | 'staff' | 'super_admin' | 'moderator' | null;
 
 interface User {
   id: number;
@@ -70,7 +70,7 @@ interface AuthState {
 
 const getInitialRole = (): UserRole => {
   const stored = localStorage.getItem('user_role');
-  if (stored === 'employer' || stored === 'candidate' || stored === 'admin') {
+  if (['employer', 'candidate', 'admin', 'super_admin', 'moderator'].includes(stored || '')) {
     return stored as UserRole;
   }
   return null;

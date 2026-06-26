@@ -93,8 +93,10 @@ class RegisterView(generics.CreateAPIView):
             send_welcome_email(user, s)
         
         # Notify admins if the setting is enabled
-        if s.notify_admins_on_registration:
-            user = User.objects.get(username=response.data.get('username'))
+        user = User.objects.get(username=response.data.get('username'))
+        if user.role == 'candidate' and s.notify_admins_on_registration:
+            notify_admins_new_registration(user, s)
+        elif user.role == 'employer' and s.notify_admins_on_employer_registration:
             notify_admins_new_registration(user, s)
                 
         return response

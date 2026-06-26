@@ -150,6 +150,7 @@ class SiteSettings(models.Model):
     allow_registrations = models.BooleanField(default=True)
     require_email_verification = models.BooleanField(default=True)
     notify_admins_on_registration = models.BooleanField(default=True)
+    notify_admins_on_employer_registration = models.BooleanField(default=True)
     show_empty_offers_countdown = models.BooleanField(default=True)
     seo_title = models.CharField(max_length=200, default='StartJobs - La plateforme des emplois pour jeunes')
     seo_description = models.TextField(default='Trouvez rapidement des petits boulots et des offres de stage au Cameroun.')
