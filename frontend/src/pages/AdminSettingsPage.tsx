@@ -22,6 +22,7 @@ interface SiteSettings {
   require_email_verification: boolean;
   notify_admins_on_registration: boolean;
   notify_admins_on_employer_registration: boolean;
+  suspend_employer_features: boolean;
   show_empty_offers_countdown: boolean;
   seo_title: string;
   seo_description: string;
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   require_email_verification: true,
   notify_admins_on_registration: true,
   notify_admins_on_employer_registration: true,
+  suspend_employer_features: false,
   show_empty_offers_countdown: true,
   seo_title: 'StartJobs - La plateforme des emplois pour jeunes',
   seo_description: 'Trouvez rapidement des petits boulots et des offres de stage au Cameroun.',
@@ -94,6 +96,7 @@ export default function AdminSettingsPage() {
       formData.append('require_email_verification', String(settings.require_email_verification));
       formData.append('notify_admins_on_registration', String(settings.notify_admins_on_registration));
       formData.append('notify_admins_on_employer_registration', String(settings.notify_admins_on_employer_registration));
+      formData.append('suspend_employer_features', String(settings.suspend_employer_features));
       formData.append('show_empty_offers_countdown', String(settings.show_empty_offers_countdown));
       formData.append('seo_title', settings.seo_title);
       formData.append('seo_description', settings.seo_description);
@@ -287,6 +290,16 @@ export default function AdminSettingsPage() {
                   <Typography variant="body2" color="text.secondary">Envoie un email aux administrateurs lorsqu'un nouvel employeur s'inscrit.</Typography>
                 </Box>
                 <Switch checked={settings.notify_admins_on_employer_registration} onChange={handleChange('notify_admins_on_employer_registration')} color="secondary" />
+              </Box>
+
+              <Divider />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, bgcolor: settings.suspend_employer_features ? alpha(theme.palette.error.main, 0.05) : 'transparent', borderRadius: '12px' }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, color: settings.suspend_employer_features ? 'error.main' : 'text.primary' }}>Suspendre les fonctionnalités employeur</Typography>
+                  <Typography variant="body2" color="text.secondary">Masque temporairement les menus "Liste des candidats", "Messages", et "Ajout d'offre" dans les tableaux de bord employeurs.</Typography>
+                </Box>
+                <Switch checked={settings.suspend_employer_features} onChange={handleChange('suspend_employer_features')} color="error" />
               </Box>
 
               <Divider />

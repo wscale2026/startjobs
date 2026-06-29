@@ -64,6 +64,10 @@ class UserSerializer(serializers.ModelSerializer):
                 'verification_requested': obj.employer_profile.verification_requested,
                 'generated_password': getattr(obj.employer_profile, 'generated_password', ''),
                 'logo': obj.employer_profile.logo.url if obj.employer_profile.logo else None,
+                'kyc_status': getattr(obj.employer_profile, 'kyc_status', 'unverified'),
+                'kyc_document': obj.employer_profile.kyc_document.url if obj.employer_profile.kyc_document else None,
+                'kyc_rejection_reason': getattr(obj.employer_profile, 'kyc_rejection_reason', ''),
+                'employer_type': getattr(obj.employer_profile, 'employer_type', 'particulier'),
             }
         return None
 
@@ -208,7 +212,7 @@ class EmployerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployerProfile
         fields = ('id', 'user', 'company_name', 'address', 'phone', 'verified', 'verification_requested', 'logo',
-                  'industry', 'city', 'neighborhood', 'latitude', 'longitude', 'recruits_per_month', 'description', 'score')
+                  'industry', 'city', 'neighborhood', 'latitude', 'longitude', 'recruits_per_month', 'description', 'score', 'kyc_status', 'kyc_document', 'employer_type', 'kyc_rejection_reason')
 
     def get_score(self, obj):
         from interactions.models import Review

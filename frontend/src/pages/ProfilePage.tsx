@@ -274,6 +274,21 @@ export default function ProfilePage() {
                 )}
               </Stack>
             </Paper>
+
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, mt: 4, px: 1 }}>Présentation de l'entreprise</Typography>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 3, 
+                borderRadius: '20px', 
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                bgcolor: isDark ? 'rgba(255,255,255,0.02)' : '#ffffff',
+              }}
+            >
+              <Typography variant="body2" sx={{ lineHeight: 1.8, color: 'text.secondary', whiteSpace: 'pre-wrap' }}>
+                {user?.employer_profile?.description || 'Aucune présentation renseignée. Cliquez sur "Modifier le profil" pour ajouter une description de votre entreprise.'}
+              </Typography>
+            </Paper>
           </Grid>
         </Grid>
 

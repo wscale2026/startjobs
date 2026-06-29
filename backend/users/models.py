@@ -54,12 +54,30 @@ class AdminProfile(models.Model):
 
 
 class EmployerProfile(models.Model):
+    KYC_STATUS_CHOICES = (
+        ('unverified', 'Non vérifié'),
+        ('pending', 'En attente'),
+        ('approved', 'Approuvé'),
+        ('rejected', 'Rejeté'),
+    )
+    EMPLOYER_TYPE_CHOICES = (
+        ('particulier', 'Particulier'),
+        ('entreprise', 'Entreprise'),
+    )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employer_profile')
+    employer_type = models.CharField(max_length=20, choices=EMPLOYER_TYPE_CHOICES, default='particulier')
     company_name = models.CharField(max_length=255, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     verified = models.BooleanField(default=False)
     verification_requested = models.BooleanField(default=False)
+    
+    # KYC Fields
+    kyc_status = models.CharField(max_length=20, choices=KYC_STATUS_CHOICES, default='unverified')
+    kyc_document = models.FileField(upload_to='employers/kyc/', blank=True, null=True)
+    kyc_rejection_reason = models.TextField(blank=True, null=True)
+    
     generated_password = models.CharField(max_length=128, blank=True, null=True, help_text="Temporary password generated for admin view")
     logo = models.ImageField(upload_to='employers/logos/', blank=True, null=True)
     industry = models.CharField(max_length=100, blank=True, null=True)
@@ -151,6 +169,7 @@ class SiteSettings(models.Model):
     require_email_verification = models.BooleanField(default=True)
     notify_admins_on_registration = models.BooleanField(default=True)
     notify_admins_on_employer_registration = models.BooleanField(default=True)
+    suspend_employer_features = models.BooleanField(default=False)
     show_empty_offers_countdown = models.BooleanField(default=True)
     seo_title = models.CharField(max_length=200, default='StartJobs - La plateforme des emplois pour jeunes')
     seo_description = models.TextField(default='Trouvez rapidement des petits boulots et des offres de stage au Cameroun.')

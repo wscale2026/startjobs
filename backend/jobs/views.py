@@ -67,9 +67,13 @@ class JobOfferViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
         # Auto-assign employer to logged-in user
         if hasattr(self.request.user, 'employer_profile'):
-            serializer.save(employer=self.request.user.employer_profile)
+            profile = self.request.user.employer_profile
+            if profile.kyc_status != 'approved':
+                raise PermissionDenied("Votre profil doit être vérifié (KYC approuvé) pour publier une offre.")
+            serializer.save(employer=profile)
         else:
             serializer.save()
 
@@ -88,7 +92,12 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             job_offer__end_date__lt=now
         ).update(status='completed')
         
-        queryset = Application.objects.all().order_by('-created_at')
+        queryset = Application.objects.select_related(
+            'candidate', 
+            'candidate__user', 
+            'job_offer', 
+            'job_offer__employer'
+        ).order_by('-created_at')
         if not self.request.user.is_authenticated:
             return queryset.none()
             

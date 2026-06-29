@@ -12,15 +12,19 @@ import {
   Avatar,
   CircularProgress,
   useTheme,
-  Slide,
   useMediaQuery,
-  alpha
+  alpha,
+  Tabs,
+  Tab,
+  Slide
 } from '@mui/material';
 import { TransitionProps } from '@mui/material/transitions';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import api from '../utils/api';
+
+let cachedContacts: any[] | null = null;
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -44,46 +48,66 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isDark = theme.palette.mode === 'dark';
   const [search, setSearch] = useState('');
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>(cachedContacts || []);
+  const [loading, setLoading] = useState(!cachedContacts);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    if (open && search === '') {
-      fetchUsers('');
+    if (!open) return;
+    
+    const fetchBase = async () => {
+      try {
+        if (!cachedContacts) setLoading(true);
+        const res = await api.get('search-contacts/');
+        const data = res.data.results ? res.data.results : res.data;
+        cachedContacts = data;
+        if (!search.trim()) setUsers(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!cachedContacts) {
+      fetchBase();
+    } else if (!search.trim()) {
+      setUsers(cachedContacts);
+      fetchBase(); // Refresh cache silently
     }
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const delay = setTimeout(() => {
-      if (search) fetchUsers(search);
-    }, 400);
+    if (!search.trim()) {
+      if (cachedContacts) setUsers(cachedContacts);
+      return;
+    }
+    
+    const delay = setTimeout(async () => {
+      try {
+        // We do NOT set loading=true here to keep the current results visible while refining!
+        const res = await api.get(`search-contacts/?search=${encodeURIComponent(search)}`);
+        const data = res.data.results ? res.data.results : res.data;
+        setUsers(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
     return () => clearTimeout(delay);
   }, [search, open]);
 
-  const fetchUsers = async (query = '') => {
-    try {
-      setLoading(true);
-      const res = await api.get(`search-contacts/?search=${encodeURIComponent(query)}`);
-      // Depending on pagination
-      const data = res.data.results ? res.data.results : res.data;
-      setUsers(data);
-    } catch (err) {
-      console.error('Erreur récupération utilisateurs', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredUsers = users.filter((u) => {
-    if (u.role === 'admin' || u.is_superuser) return false;
+    // 0 = Candidats, 1 = Employeurs, 2 = Support
+    if (activeTab === 0 && u.role !== 'candidate') return false;
+    if (activeTab === 1 && u.role !== 'employer') return false;
+    if (activeTab === 2 && u.role !== 'admin' && u.role !== 'super_admin' && !u.is_superuser) return false;
     
     const fullName = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase();
     const username = (u.username || '').toLowerCase();
     const query = search.toLowerCase();
     return fullName.includes(query) || username.includes(query);
   });
-
   return (
     <Dialog
       open={open}
@@ -92,7 +116,8 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
         '& .MuiDialog-paper': {
           width: '100%',
           maxWidth: { xs: '100%', sm: 500 },
-          height: { xs: '90vh', sm: '70vh' },
+          height: { xs: '100dvh', sm: '70vh' },
+          maxHeight: { xs: '100dvh', sm: '70vh' },
           m: { xs: 0, sm: 2 },
           position: { xs: 'absolute', sm: 'relative' },
           bottom: { xs: 0, sm: 'auto' },
@@ -110,7 +135,7 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
       }}
     >
       {/* Header */}
-      <Box sx={{ p: 2, pb: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
+      <Box sx={{ p: 2, pb: 0 }}>
         {isMobile && (
           <Box sx={{ width: 40, height: 4, bgcolor: 'text.disabled', borderRadius: 2, mx: 'auto', mb: 2, opacity: 0.5 }} />
         )}
@@ -133,6 +158,16 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
             autoFocus
           />
         </Box>
+        <Tabs 
+          value={activeTab} 
+          onChange={(e, v) => setActiveTab(v)}
+          variant="fullWidth"
+          sx={{ borderBottom: 1, borderColor: 'divider', mt: 1, minHeight: 40, '& .MuiTab-root': { minHeight: 40 } }}
+        >
+          <Tab label="Candidats" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.85rem' }} />
+          <Tab label="Employeurs" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.85rem' }} />
+          <Tab label="Support" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.85rem' }} />
+        </Tabs>
       </Box>
 
       {/* List */}
@@ -177,7 +212,7 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
                   }
                   secondary={
                     <Typography variant="body2" color="text.secondary">
-                      @{user.username} {user.role === 'employer' ? '• Employeur' : user.role === 'candidate' ? '• Candidat' : ''}
+                      @{user.username} {user.role === 'employer' ? '• Employeur' : user.role === 'candidate' ? '• Candidat' : '• Administrateur'}
                     </Typography>
                   }
                 />

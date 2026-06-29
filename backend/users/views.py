@@ -94,8 +94,35 @@ class RegisterView(generics.CreateAPIView):
         
         # Notify admins if the setting is enabled
         user = User.objects.get(username=response.data.get('username'))
-        if user.role == 'candidate' and s.notify_admins_on_registration:
-            notify_admins_new_registration(user, s)
+        if user.role == 'candidate':
+            if s.notify_admins_on_registration:
+                notify_admins_new_registration(user, s)
+                
+            # Welcome message for candidates
+            admin_user = User.objects.filter(is_superuser=True).first()
+            if admin_user:
+                from interactions.models import Conversation, Message
+                conv = Conversation.objects.create()
+                conv.participants.add(admin_user, user)
+                
+                welcome_text = f"""Bonjour {user.first_name or user.username} 👋,
+
+Bienvenue sur StartJobs ! Nous sommes ravis de vous compter parmi nous.
+
+Pour maximiser vos chances de trouver l'emploi idéal, voici quelques étapes à suivre :
+1. Complétez votre profil à 100% (ajoutez une photo, une bio et vos expériences).
+2. Définissez votre localisation précise pour recevoir des offres de proximité.
+3. Consultez régulièrement le Dashboard pour ne manquer aucune nouvelle offre.
+
+Si vous avez la moindre question, n'hésitez pas à répondre directement à ce message.
+
+L'équipe StartJobs."""
+                Message.objects.create(
+                    conversation=conv,
+                    sender=admin_user,
+                    text=welcome_text
+                )
+                
         elif user.role == 'employer' and s.notify_admins_on_employer_registration:
             notify_admins_new_registration(user, s)
                 
@@ -465,7 +492,7 @@ from django.db.models import Q
 @permission_classes([permissions.IsAuthenticated])
 def search_contacts(request):
     query = request.GET.get('search', '').lower()
-    users = User.objects.exclude(username='admin').exclude(id=request.user.id)
+    users = User.objects.exclude(id=request.user.id).select_related('candidate_profile', 'employer_profile')
     if query:
         users = users.filter(
             Q(first_name__icontains=query) |
@@ -491,6 +518,77 @@ def search_contacts(request):
             'profile_pic': pic,
         })
     return Response(results)
+
+from rest_framework.parsers import MultiPartParser, FormParser
+class SubmitKycView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        if not hasattr(request.user, 'employer_profile'):
+            return Response({'error': 'Seuls les employeurs peuvent soumettre un KYC.'}, status=403)
+            
+        profile = request.user.employer_profile
+        
+        if 'kyc_document' not in request.FILES:
+            return Response({'error': 'Veuillez fournir un document.'}, status=400)
+            
+        profile.kyc_document = request.FILES['kyc_document']
+        profile.employer_type = request.data.get('employer_type', 'particulier')
+        profile.kyc_status = 'pending'
+        profile.save()
+        
+        # Send email to admins
+        from django.core.mail import send_mail
+        from django.conf import settings
+        from .models import User, SiteSettings
+        
+        try:
+            s = SiteSettings.get_settings()
+            admins = User.objects.filter(is_staff=True, email__isnull=False)
+            admin_emails = [admin.email for admin in admins if admin.email]
+            
+            if admin_emails:
+                frontend_base = settings.FRONTEND_URL.rstrip('/') if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:5173'
+                
+                html_message = f"""
+                <!DOCTYPE html>
+                <html>
+                <body style="font-family: Arial, sans-serif; background:#f4f7f6; margin:0; padding:0;">
+                    <div style="max-width:560px; margin:30px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+                        <div style="background:#f59e0b; padding:28px 30px; text-align:center;">
+                            <h2 style="color:#fff; margin:0; font-size:20px;">🛡️ Nouvelle Demande KYC</h2>
+                        </div>
+                        <div style="padding:30px 34px; color:#333;">
+                            <p style="font-size:16px; margin-top:0;">L'employeur <strong>{request.user.first_name or request.user.username}</strong> ({request.user.email}) vient de soumettre ses documents pour la vérification de son identité.</p>
+                            
+                            <div style="background:#fffbeb; border-left:4px solid #f59e0b; border-radius:6px; padding:16px 20px; margin:20px 0;">
+                                <p style="margin:0 0 5px 0; color:#b45309; font-weight:bold; font-size:14px; text-transform:uppercase;">Action Requise :</p>
+                                <p style="margin:0; color:#92400e; font-size:15px;">Veuillez examiner les documents pour approuver ou rejeter la demande.</p>
+                            </div>
+                            
+                            <div style="text-align:center; margin:30px 0 10px 0;">
+                                <a href="{frontend_base}/admin/users" style="background:#f59e0b; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:600; display:inline-block;">
+                                    Examiner dans l'administration
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                send_mail(
+                    subject=f"Nouvelle demande KYC - {request.user.first_name or request.user.username}",
+                    message=f"L'employeur {request.user.first_name or request.user.username} ({request.user.email}) a soumis des documents pour la vérification de son identité (KYC).\n\nVeuillez vous connecter au back-office pour examiner et approuver la demande.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=admin_emails,
+                    fail_silently=True,
+                    html_message=html_message
+                )
+        except Exception as e:
+            print(f"Erreur d'envoi d'email aux admins pour KYC: {e}")
+        
+        return Response({'message': 'Documents KYC soumis avec succès.'})
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer

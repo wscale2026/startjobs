@@ -21,6 +21,10 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { fetchOffers, deleteOffer } from '../store/slices/offersSlice';
 import { fetchApplications, updateApplicationStatus, deleteApplication } from '../store/slices/applicationsSlice';
 import RatingDialog from '../components/RatingDialog';
+import KycSubmissionModal from '../components/KycSubmissionModal';
+import LockIcon from '@mui/icons-material/Lock';
+import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 
 
@@ -34,6 +38,11 @@ export default function EmployerDashboardPage() {
   const { items: allOffers, status: offersStatus } = useAppSelector((state: any) => state.offers);
   const { items: allApplications, status: appsStatus } = useAppSelector((state: any) => state.applications);
   const auth = useAppSelector((state: any) => state.auth);
+  const suspendEmployerFeatures = useAppSelector((state: any) => state.siteSettings.suspend_employer_features);
+  
+  const kycStatus = auth.user?.employer_profile?.kyc_status || 'unverified';
+  const employerType = auth.user?.employer_profile?.employer_type || 'particulier';
+  const isRestricted = suspendEmployerFeatures || (kycStatus !== 'approved');
 
   React.useEffect(() => {
     if (offersStatus === 'idle') dispatch(fetchOffers({ my_offers: true }));
@@ -97,6 +106,9 @@ export default function EmployerDashboardPage() {
   const [ratingMissionId, setRatingMissionId] = React.useState<string | null>(null);
   const ratingOpen = ratingMissionId !== null;
 
+  // KYC Modal state
+  const [kycModalOpen, setKycModalOpen] = React.useState(false);
+
 
   const openConfirmation = (type: 'reject' | 'delete' | 'delete_offer', id: number) => {
     setConfirmType(type);
@@ -141,6 +153,55 @@ export default function EmployerDashboardPage() {
         <Typography color="text.secondary" sx={{ mb: 4, fontSize: '1.1rem' }}>
           Voici ce qui se passe sur vos annonces aujourd'hui.
         </Typography>
+
+        {/* --- DYNAMIC ALERT BANNERS --- */}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {suspendEmployerFeatures && (
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: alpha(theme.palette.error.main, 0.1), border: `1px solid ${theme.palette.error.main}`, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <LockIcon color="error" />
+              <Box>
+                <Typography sx={{ fontWeight: 700, color: 'error.main' }}>Fonctionnalités Restreintes</Typography>
+                <Typography variant="body2" sx={{ color: 'error.main' }}>Certaines fonctionnalités (publication d'offres, messagerie, liste de candidats) sont temporairement suspendues pour maintenance.</Typography>
+              </Box>
+            </Box>
+          )}
+
+          {!suspendEmployerFeatures && kycStatus === 'unverified' && (
+            <Box sx={{ p: 2.5, borderRadius: 3, bgcolor: alpha(theme.palette.warning.main, 0.1), border: `1px solid ${theme.palette.warning.main}`, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                <AssignmentLateIcon color="warning" sx={{ fontSize: 32, mt: 0.25 }} />
+                <Box>
+                  <Typography sx={{ fontWeight: 800, color: 'warning.dark' }}>Vérification d'Identité Requise</Typography>
+                  <Typography variant="body2" sx={{ color: 'warning.dark', maxWidth: 600 }}>Pour des raisons de sécurité, vous devez soumettre un document d'identité (CNI, RCCM, etc.) pour débloquer la publication d'offres d'emploi et la messagerie.</Typography>
+                </Box>
+              </Box>
+              <Button variant="contained" color="warning" sx={{ fontWeight: 700, borderRadius: 2, width: { xs: '100%', sm: 'auto' }, py: { xs: 1, sm: 0.5 }, flexShrink: 0 }} onClick={() => setKycModalOpen(true)}>Soumettre mes documents</Button>
+            </Box>
+          )}
+
+          {!suspendEmployerFeatures && kycStatus === 'pending' && (
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: alpha(theme.palette.info.main, 0.1), border: `1px solid ${theme.palette.info.main}`, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <HourglassEmptyIcon color="info" />
+              <Box>
+                <Typography sx={{ fontWeight: 700, color: 'info.main' }}>Vérification en cours</Typography>
+                <Typography variant="body2" sx={{ color: 'info.main' }}>Vos documents d'identité sont actuellement en cours d'examen par notre équipe. Vous serez notifié dès qu'ils seront approuvés.</Typography>
+              </Box>
+            </Box>
+          )}
+
+          {!suspendEmployerFeatures && kycStatus === 'rejected' && (
+            <Box sx={{ p: 2.5, borderRadius: 3, bgcolor: alpha(theme.palette.error.main, 0.1), border: `1px solid ${theme.palette.error.main}`, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                <CloseIcon color="error" sx={{ fontSize: 32, mt: 0.25 }} />
+                <Box>
+                  <Typography sx={{ fontWeight: 800, color: 'error.main' }}>Vérification Rejetée</Typography>
+                  <Typography variant="body2" sx={{ color: 'error.main', maxWidth: 600 }}>Vos documents n'ont pas pu être validés. Motif : {auth.user?.employer_profile?.kyc_rejection_reason || 'Document non conforme'}.</Typography>
+                </Box>
+              </Box>
+              <Button variant="contained" color="error" sx={{ fontWeight: 700, borderRadius: 2, width: { xs: '100%', sm: 'auto' }, py: { xs: 1, sm: 0.5 }, flexShrink: 0 }} onClick={() => setKycModalOpen(true)}>Soumettre à nouveau</Button>
+            </Box>
+          )}
+        </Box>
 
         {/* ─── STATS GRID ─────────────────────────────────────────────────────────────── */}
         <Grid container spacing={2}>
@@ -501,19 +562,20 @@ export default function EmployerDashboardPage() {
             variant="contained"
             fullWidth
             size="large"
+            disabled={isRestricted}
             className="pressable"
             onClick={() => navigate('/post-offer')}
-            startIcon={<AddIcon />}
+            startIcon={isRestricted ? <LockIcon /> : <AddIcon />}
             sx={{
               py: 2,
               mb: 4,
               borderRadius: 3,
               fontWeight: 700,
               fontSize: '1.05rem',
-              boxShadow: `0 8px 24px -8px ${theme.palette.primary.main}`,
+              boxShadow: isRestricted ? 'none' : `0 8px 24px -8px ${theme.palette.primary.main}`,
             }}
           >
-            Publier une annonce
+            {isRestricted ? 'Publication Bloquée' : 'Publier une annonce'}
           </Button>
 
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, letterSpacing: '-0.01em' }}>
@@ -593,6 +655,13 @@ export default function EmployerDashboardPage() {
         missionId={ratingMissionId}
         onClose={() => setRatingMissionId(null)}
         onSuccess={() => dispatch(fetchApplications())}
+      />
+
+      {/* KYC Modal */}
+      <KycSubmissionModal
+        open={kycModalOpen}
+        onClose={() => setKycModalOpen(false)}
+        employerType={employerType}
       />
     </Box>
   );

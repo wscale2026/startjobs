@@ -18,6 +18,9 @@ class AdminDashboardView(APIView):
         total_candidates = CandidateProfile.objects.count()
         total_offers = JobOffer.objects.count()
         total_applications = Application.objects.count()
+        
+        pending_kyc_requests = EmployerProfile.objects.filter(kyc_status='pending').count()
+        pending_badge_requests = EmployerProfile.objects.filter(verification_requested=True, verified=False).count()
 
         # Users registered per day in the last 7 days
         seven_days_ago = timezone.now() - timedelta(days=7)
@@ -55,6 +58,8 @@ class AdminDashboardView(APIView):
             "total_candidates": total_candidates,
             "total_offers": total_offers,
             "total_applications": total_applications,
+            "pending_kyc_requests": pending_kyc_requests,
+            "pending_badge_requests": pending_badge_requests,
             "chart_data": chart_data,
             "recent_users": recent_users
         })
@@ -178,6 +183,7 @@ class AdminSettingsView(APIView):
             'require_email_verification': s.require_email_verification,
             'notify_admins_on_registration': s.notify_admins_on_registration,
             'notify_admins_on_employer_registration': s.notify_admins_on_employer_registration,
+            'suspend_employer_features': s.suspend_employer_features,
             'show_empty_offers_countdown': s.show_empty_offers_countdown,
             'seo_title': s.seo_title,
             'seo_description': s.seo_description,
@@ -202,6 +208,8 @@ class AdminSettingsView(APIView):
             s.notify_admins_on_registration = str(data['notify_admins_on_registration']).lower() == 'true'
         if 'notify_admins_on_employer_registration' in data:
             s.notify_admins_on_employer_registration = str(data['notify_admins_on_employer_registration']).lower() == 'true'
+        if 'suspend_employer_features' in data:
+            s.suspend_employer_features = str(data['suspend_employer_features']).lower() == 'true'
         if 'show_empty_offers_countdown' in data:
             s.show_empty_offers_countdown = str(data['show_empty_offers_countdown']).lower() == 'true'
             
@@ -362,10 +370,152 @@ class AdminUpdateUserView(APIView):
         if hasattr(user, 'employer_profile') and 'profile' in data:
             profile_data = data['profile']
             profile = user.employer_profile
+            
+            old_kyc_status = profile.kyc_status
+            
             if 'verified' in profile_data:
                 profile.verified = profile_data['verified']
             if 'verification_requested' in profile_data:
                 profile.verification_requested = profile_data['verification_requested']
+            if 'kyc_status' in profile_data:
+                profile.kyc_status = profile_data['kyc_status']
+            if 'kyc_rejection_reason' in profile_data:
+                profile.kyc_rejection_reason = profile_data['kyc_rejection_reason']
             profile.save()
+            
+            if old_kyc_status != 'approved' and profile.kyc_status == 'approved':
+                from django.core.mail import send_mail
+                from django.conf import settings
+                from users.models import SiteSettings, User
+                from interactions.models import Conversation, Message
+                
+                s = SiteSettings.get_settings()
+                
+                # Send email
+                try:
+                    frontend_base = settings.FRONTEND_URL.rstrip('/') if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:5173'
+                    
+                    html_message = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <body style="font-family: Arial, sans-serif; background:#f4f7f6; margin:0; padding:0;">
+                        <div style="max-width:560px; margin:30px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+                            <div style="background:#10b981; padding:28px 30px; text-align:center;">
+                                <h2 style="color:#fff; margin:0; font-size:20px;">🎉 Identité Vérifiée avec Succès</h2>
+                            </div>
+                            <div style="padding:30px 34px; color:#333;">
+                                <p style="font-size:16px; margin-top:0;">Bonjour <strong>{user.first_name or user.username}</strong>,</p>
+                                <p style="font-size:15px; line-height:1.6;">Excellente nouvelle ! Les documents d'identité de votre entreprise ont été <strong>approuvés</strong> par l'équipe {s.site_name}.</p>
+                                
+                                <div style="background:#f8fafc; border-left:4px solid #10b981; border-radius:6px; padding:16px 20px; margin:20px 0;">
+                                    <p style="margin:0 0 10px 0; font-weight:bold;">Toutes vos fonctionnalités sont débloquées :</p>
+                                    <ul style="margin:0; padding-left:16px; line-height:1.9;">
+                                        <li>Publication d'offres d'emploi en illimité</li>
+                                        <li>Recherche approfondie de profils candidats</li>
+                                        <li>Messagerie interne pour échanger en direct</li>
+                                        <li>Obtention du badge "Employeur Vérifié"</li>
+                                    </ul>
+                                </div>
+                                
+                                <div style="text-align:center; margin:30px 0 10px 0;">
+                                    <a href="{frontend_base}/employer/dashboard" style="background:#10b981; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:600; display:inline-block;">
+                                        Accéder à mon espace
+                                    </a>
+                                </div>
+                                <p style="font-size:14px; color:#64748b; margin-top:20px;">L'équipe {s.site_name} vous souhaite d'excellents recrutements !</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    send_mail(
+                        subject=f"Votre identité a été vérifiée sur {s.site_name} 🎉",
+                        message=f"Bonjour {user.first_name or user.username},\n\nExcellente nouvelle ! Votre vérification d'identité (KYC) a été approuvée par l'équipe {s.site_name}.\n\nVous avez désormais accès à l'ensemble des fonctionnalités de la plateforme (publication d'offres d'emploi, messagerie, etc.).\n\nL'équipe {s.site_name}",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=True,
+                        html_message=html_message
+                    )
+                except Exception as e:
+                    print(f"Error sending KYC approval email to {user.email}: {e}")
+                
+                # Send internal message
+                try:
+                    superadmin = User.objects.filter(is_superuser=True).first()
+                    if superadmin:
+                        conv = Conversation.objects.filter(participants=user).filter(participants=superadmin).first()
+                        if not conv:
+                            conv = Conversation.objects.create()
+                            conv.participants.add(user, superadmin)
+                        
+                        instructions = (
+                            f"Félicitations {user.first_name or user.username} ! 🎉\n\n"
+                            f"Vos documents d'identité ont été validés avec succès par l'équipe {s.site_name}.\n"
+                            "Toutes les fonctionnalités de votre compte employeur sont maintenant débloquées.\n\n"
+                            "Voici quelques conseils pour bien démarrer :\n"
+                            "1. Assurez-vous que les informations de votre entreprise sont complètes dans votre profil.\n"
+                            "2. Cliquez sur 'Publier une annonce' pour créer votre première offre d'emploi.\n"
+                            "3. Consultez la liste des candidats et trouvez les meilleurs profils de votre quartier.\n"
+                            "4. Discutez directement avec les candidats via cette messagerie intégrée.\n\n"
+                            "Nous vous souhaitons d'excellents recrutements !"
+                        )
+                        
+                        Message.objects.create(
+                            conversation=conv,
+                            sender=superadmin,
+                            text=instructions
+                        )
+                except Exception as e:
+                    print(f"Error creating internal message: {e}")
+            elif old_kyc_status != 'rejected' and profile.kyc_status == 'rejected':
+                from django.core.mail import send_mail
+                from django.conf import settings
+                from users.models import SiteSettings
+                
+                try:
+                    s = SiteSettings.get_settings()
+                    reason = profile.kyc_rejection_reason or "Document illisible ou non conforme."
+                    frontend_base = settings.FRONTEND_URL.rstrip('/') if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:5173'
+                    
+                    html_message = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <body style="font-family: Arial, sans-serif; background:#f4f7f6; margin:0; padding:0;">
+                        <div style="max-width:560px; margin:30px auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+                            <div style="background:#ef4444; padding:28px 30px; text-align:center;">
+                                <h2 style="color:#fff; margin:0; font-size:20px;">⚠️ Vérification Rejetée</h2>
+                            </div>
+                            <div style="padding:30px 34px; color:#333;">
+                                <p style="font-size:16px; margin-top:0;">Bonjour <strong>{user.first_name or user.username}</strong>,</p>
+                                <p style="font-size:15px; line-height:1.6;">Nous avons examiné les documents d'identité que vous avez soumis sur {s.site_name}. Malheureusement, <strong>votre demande n'a pas pu être validée</strong>.</p>
+                                
+                                <div style="background:#fef2f2; border-left:4px solid #ef4444; border-radius:6px; padding:16px 20px; margin:20px 0;">
+                                    <p style="margin:0 0 8px 0; color:#b91c1c; font-weight:bold; font-size:14px; text-transform:uppercase;">Motif du rejet :</p>
+                                    <p style="margin:0; color:#7f1d1d; font-size:15px;">{reason}</p>
+                                </div>
+                                
+                                <p style="font-size:15px; line-height:1.6;">Pour débloquer vos accès, nous vous invitons à vous connecter à votre compte et à soumettre de nouveaux documents (assurez-vous qu'ils soient lisibles, valides, et correspondent aux informations saisies).</p>
+                                
+                                <div style="text-align:center; margin:30px 0 10px 0;">
+                                    <a href="{frontend_base}/employer/dashboard" style="background:#ef4444; color:#fff; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:600; display:inline-block;">
+                                        Soumettre de nouveaux documents
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    
+                    send_mail(
+                        subject=f"Vérification d'identité rejetée sur {s.site_name}",
+                        message=f"Bonjour {user.first_name or user.username},\n\nNous avons examiné les documents d'identité que vous avez soumis sur {s.site_name}.\n\nMalheureusement, votre demande a été rejetée pour le motif suivant :\n{reason}\n\nNous vous invitons à vous connecter à votre compte et à soumettre de nouveaux documents conformes pour pouvoir débloquer toutes les fonctionnalités de votre espace employeur.\n\nL'équipe {s.site_name}",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=True,
+                        html_message=html_message
+                    )
+                except Exception as e:
+                    print(f"Error sending KYC rejection email to {user.email}: {e}")
 
         return Response({'message': 'Utilisateur mis à jour avec succès.'})

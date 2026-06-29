@@ -10,6 +10,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import BadgeIcon from '@mui/icons-material/Badge';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import useSWR from 'swr';
 import { fetcher } from '../utils/api';
 
@@ -84,8 +86,10 @@ export default function AdminDashboardPage() {
   const kpis = [
     { title: 'Total Candidats', value: stats.total_candidates.toString(), sub: 'Inscrits sur la plateforme', color: theme.palette.primary.main, icon: <PeopleIcon /> },
     { title: 'Employeurs Actifs', value: stats.total_employers.toString(), sub: 'Entreprises & Particuliers', color: theme.palette.info.main, icon: <WorkIcon /> },
-    { title: 'Offres d\'emploi totales', value: stats.total_offers.toString(), sub: 'Missions publiées', color: theme.palette.success.main, icon: <DescriptionIcon /> },
+    { title: 'Offres d\'emploi', value: stats.total_offers.toString(), sub: 'Missions publiées', color: theme.palette.success.main, icon: <DescriptionIcon /> },
     { title: 'Candidatures', value: stats.total_applications.toString(), sub: 'CV envoyés', color: theme.palette.secondary.main, icon: <CheckCircleIcon /> },
+    { title: 'Demandes KYC', value: stats.pending_kyc_requests?.toString() || '0', sub: 'Identités en attente', color: theme.palette.warning.main, icon: <BadgeIcon /> },
+    { title: 'Demandes de Badge', value: stats.pending_badge_requests?.toString() || '0', sub: 'Badges "Vérifié"', color: theme.palette.error.main, icon: <VerifiedIcon /> },
   ];
 
   const dataUsers = [
@@ -121,7 +125,7 @@ export default function AdminDashboardPage() {
       {/* Grille dense de KPIs */}
       <Grid container spacing={2.5} sx={{ mb: 4 }}>
         {kpis.map((kpi, i) => (
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={kpi.title}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 4 }} key={kpi.title}>
             <Box component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <TiltCard
                 scaleOnHover={1.02}
@@ -162,8 +166,8 @@ export default function AdminDashboardPage() {
       <Grid container spacing={3}>
         {/* Courbe Principale */}
         <Grid size={{ xs: 12, xl: 8 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, display: 'flex', flexDirection: 'column', boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexShrink: 0 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Trafic & Inscriptions</Typography>
                 <Typography variant="body2" color="text.secondary">Nouvelles inscriptions vs Utilisateurs actifs</Typography>
@@ -171,8 +175,9 @@ export default function AdminDashboardPage() {
               <IconButton size="small"><MoreVertIcon /></IconButton>
             </Box>
             
-            <ResponsiveContainer width="100%" height="80%">
-              <AreaChart data={dataGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dataGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorInscr" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.4}/>
@@ -188,21 +193,23 @@ export default function AdminDashboardPage() {
                 <RechartsTooltip content={<CustomTooltip />} />
                 <Area type="monotone" dataKey="inscrits" name="Inscriptions" stroke={theme.palette.primary.main} strokeWidth={4} fillOpacity={1} fill="url(#colorInscr)" style={{ filter: 'url(#shadowInscr)' }} />
               </AreaChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
           </Paper>
         </Grid>
 
         {/* Volume des offres en Barres */}
         <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, display: 'flex', flexDirection: 'column', boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexShrink: 0 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Volume d'offres</Typography>
                 <Typography variant="body2" color="text.secondary">Nouvelles annonces postées par jour</Typography>
               </Box>
             </Box>
-            <ResponsiveContainer width="100%" height="75%">
-              <BarChart data={dataOffersByDay} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+            <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dataOffersByDay} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorOffres" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={theme.palette.success.main} stopOpacity={1}/>
@@ -215,19 +222,21 @@ export default function AdminDashboardPage() {
                 <RechartsTooltip cursor={{ fill: alpha(theme.palette.divider, 0.3) }} content={<CustomTooltip />} />
                 <Bar dataKey="offres" name="Offres Postées" fill="url(#colorOffres)" radius={[6, 6, 0, 0]} barSize={24} />
               </BarChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
           </Paper>
         </Grid>
 
         {/* Radar Chart (Demande vs Offre par domaine) */}
         <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
-            <Box sx={{ mb: 2 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, display: 'flex', flexDirection: 'column', boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ mb: 2, flexShrink: 0 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Activité par Domaine</Typography>
               <Typography variant="body2" color="text.secondary">Candidats vs Offres d'emploi</Typography>
             </Box>
-            <ResponsiveContainer width="100%" height="80%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataRadar}>
+            <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataRadar}>
                 <PolarGrid stroke={alpha(theme.palette.divider, 0.8)} />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: theme.palette.text.secondary, fontSize: 12, fontWeight: 700 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
@@ -235,20 +244,22 @@ export default function AdminDashboardPage() {
                 <Radar name="Offres (Offre)" dataKey="B" stroke={theme.palette.warning.main} fill={theme.palette.warning.main} fillOpacity={0.5} />
                 <RechartsTooltip content={<CustomTooltip />} />
               </RadarChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
           </Paper>
         </Grid>
 
         {/* Donut Chart Secteurs */}
         <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
-            <Box sx={{ mb: 1 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, display: 'flex', flexDirection: 'column', boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ mb: 1, flexShrink: 0 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Répartition des Secteurs</Typography>
               <Typography variant="body2" color="text.secondary">Volume d'offres par catégorie</Typography>
             </Box>
             
-            <ResponsiveContainer width="100%" height="60%">
-              <PieChart>
+            <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
                 <defs>
                   <filter id="pieShadow" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.15"/>
@@ -261,9 +272,10 @@ export default function AdminDashboardPage() {
                 </Pie>
                 <RechartsTooltip content={<CustomTooltip />} />
               </PieChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
             
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2, flexShrink: 0 }}>
               {dataSectors.slice(0, 3).map((s, i) => (
                 <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -279,14 +291,15 @@ export default function AdminDashboardPage() {
 
         {/* Donut Chart Utilisateurs */}
         <Grid size={{ xs: 12, md: 6, xl: 4 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
-            <Box sx={{ mb: 1 }}>
+          <Paper component={motion.div} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.7 }} sx={{ p: 4, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, height: 420, display: 'flex', flexDirection: 'column', boxShadow: `0 24px 64px ${alpha(theme.palette.common.black, 0.06)}` }}>
+            <Box sx={{ mb: 1, flexShrink: 0 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.01em' }}>Répartition Utilisateurs</Typography>
               <Typography variant="body2" color="text.secondary">Candidats vs Employeurs</Typography>
             </Box>
             
-            <ResponsiveContainer width="100%" height="60%">
-              <PieChart>
+            <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
                 <defs>
                   <filter id="pieShadow2" x="-20%" y="-20%" width="140%" height="140%">
                     <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.15"/>
@@ -299,9 +312,10 @@ export default function AdminDashboardPage() {
                 </Pie>
                 <RechartsTooltip content={<CustomTooltip />} />
               </PieChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </Box>
             
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2, flexShrink: 0 }}>
               {dataUsers.map((s, i) => (
                 <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

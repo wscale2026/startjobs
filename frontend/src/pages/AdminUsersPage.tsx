@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, useTheme, Button, TextField, InputAdornment, Tabs, Tab, Avatar, alpha, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Divider, Stack, TablePagination, MenuItem, Select, FormControl, InputLabel, FormHelperText, CircularProgress, Menu, Autocomplete } from '@mui/material';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, useTheme, Button, TextField, InputAdornment, Tabs, Tab, Avatar, alpha, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Divider, Stack, TablePagination, MenuItem, Select, FormControl, InputLabel, FormHelperText, CircularProgress, Menu, Autocomplete, Alert } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -98,6 +98,10 @@ export default function AdminUsersPage() {
         description: profile?.description || '',
         recruitsPerMonth: profile?.recruits_per_month || '',
         verificationRequested: profile?.verification_requested || false,
+        kycStatus: profile?.kyc_status || 'unverified',
+        kycDocument: profile?.kyc_document || null,
+        employerType: profile?.employer_type || 'particulier',
+        kycRejectionReason: profile?.kyc_rejection_reason || '',
         // ── Candidate-specific fields ──────────────────
         bio: candidateProfile?.bio || '',
         photo: candidateProfile?.photo || null,
@@ -132,6 +136,12 @@ export default function AdminUsersPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [toggleBadgeUser, setToggleBadgeUser] = useState<any>(null);
   const [isTogglingBadge, setIsTogglingBadge] = useState(false);
+  
+  // KYC Review State
+  const [kycReviewUser, setKycReviewUser] = useState<any>(null);
+  const [kycRejectionReason, setKycRejectionReason] = useState('');
+  const [isKycUpdating, setIsKycUpdating] = useState(false);
+  const [kycUpdateAction, setKycUpdateAction] = useState<'approved' | 'rejected' | null>(null);
 
   // Candidate form state
   const [candForm, setCandForm] = useState({
@@ -364,6 +374,32 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleKycUpdate = async (status: 'approved' | 'rejected') => {
+    if (!kycReviewUser) return;
+    if (status === 'rejected' && !kycRejectionReason.trim()) {
+      dispatch(showSnackbar({ message: 'Veuillez préciser le motif du rejet.', severity: 'warning' }));
+      return;
+    }
+    setIsKycUpdating(true);
+    setKycUpdateAction(status);
+    try {
+      await api.patch(`/admin/update-user/${kycReviewUser.id}/`, {
+        profile: {
+          kyc_status: status,
+          kyc_rejection_reason: status === 'rejected' ? kycRejectionReason : ''
+        }
+      });
+      dispatch(showSnackbar({ message: `Le profil a été ${status === 'approved' ? 'approuvé' : 'rejeté'}.`, severity: 'success' }));
+      setKycReviewUser(null);
+      fetchUsers();
+    } catch (err: any) {
+      dispatch(showSnackbar({ message: 'Erreur lors de la mise à jour du KYC.', severity: 'error' }));
+    } finally {
+      setIsKycUpdating(false);
+      setKycUpdateAction(null);
+    }
+  };
+
   // Pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -464,6 +500,7 @@ export default function AdminUsersPage() {
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Utilisateur</TableCell>
                 {isCandidateTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Nom d'utilisateur</TableCell>}
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Téléphone</TableCell>
+                {isEmployerTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>KYC</TableCell>}
                 {isEmployerTab && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Offres postées</TableCell>}
                 {tabIndex === 2 && <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Rôle</TableCell>}
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>Date d'inscription</TableCell>
@@ -505,6 +542,18 @@ export default function AdminUsersPage() {
                     </TableCell>
                   )}
                   <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>{row.phone || '—'}</TableCell>
+
+                  {isEmployerTab && (
+                    <TableCell>
+                      <Chip 
+                        label={row.kycStatus === 'pending' ? 'En attente' : row.kycStatus === 'approved' ? 'Approuvé' : row.kycStatus === 'rejected' ? 'Rejeté' : 'Non soumis'} 
+                        size="small" 
+                        color={row.kycStatus === 'pending' ? 'warning' : row.kycStatus === 'approved' ? 'success' : row.kycStatus === 'rejected' ? 'error' : 'default'} 
+                        variant={row.kycStatus === 'pending' ? 'filled' : 'outlined'} 
+                        sx={{ fontWeight: 700, borderRadius: '6px' }} 
+                      />
+                    </TableCell>
+                  )}
 
                   {isEmployerTab && (
                     <TableCell>
@@ -1003,7 +1052,7 @@ export default function AdminUsersPage() {
         sx={{ '& .MuiDialog-paper': { borderRadius: { xs: '20px', sm: '24px' }, p: { xs: 0.5, sm: 1 }, mx: { xs: 1.5 } } }}
       >
         {/* Header */}
-        <DialogTitle sx={{ p: { xs: 2.5, sm: 3 }, pb: 0 }}>
+        <DialogTitle component="div" sx={{ p: { xs: 2.5, sm: 3 }, pb: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: alpha(theme.palette.primary.main, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1222,7 +1271,7 @@ export default function AdminUsersPage() {
         fullWidth
         sx={{ '& .MuiDialog-paper': { borderRadius: { xs: '20px', sm: '24px' }, p: { xs: 0.5, sm: 1 }, mx: { xs: 1.5 } } }}
       >
-        <DialogTitle sx={{ p: { xs: 2.5, sm: 3 }, pb: 0 }}>
+        <DialogTitle component="div" sx={{ p: { xs: 2.5, sm: 3 }, pb: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: alpha(theme.palette.secondary.main, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1483,7 +1532,7 @@ export default function AdminUsersPage() {
         fullWidth
         sx={{ '& .MuiDialog-paper': { borderRadius: '20px', p: { xs: 1, sm: 2 } } }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+        <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
           <AutoFixHighIcon color="warning" />
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Modifier le candidat</Typography>
         </DialogTitle>
@@ -1756,6 +1805,13 @@ export default function AdminUsersPage() {
             {menuUser.statut === 'Vérifié' ? 'Désactiver le badge' : 'Activer le badge'}
           </MenuItem>
         )}
+        
+        {menuUser && menuUser.role === 'employer' && menuUser.kycStatus === 'pending' && (
+          <MenuItem onClick={() => { handleMenuClose(); setKycRejectionReason(''); setKycReviewUser(menuUser); }}>
+            <BadgeIcon fontSize="small" sx={{ mr: 1.5, color: 'info.main' }} />
+            Examiner documents KYC
+          </MenuItem>
+        )}
 
         {menuUser && ['admin', 'super_admin', 'moderator'].includes(menuUser.role) && (
           <MenuItem onClick={() => {
@@ -1820,7 +1876,7 @@ export default function AdminUsersPage() {
         fullWidth
         sx={{ '& .MuiDialog-paper': { borderRadius: '20px', p: 1 } }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'error.main', pb: 1 }}>
+        <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'error.main', pb: 1 }}>
           <WarningAmberIcon color="error" />
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Supprimer l'utilisateur</Typography>
         </DialogTitle>
@@ -1864,7 +1920,7 @@ export default function AdminUsersPage() {
         fullWidth
         sx={{ '& .MuiDialog-paper': { borderRadius: '20px', p: 1 } }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: toggleBadgeUser?.statut === 'Vérifié' ? 'warning.main' : 'success.main', pb: 1 }}>
+        <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: toggleBadgeUser?.statut === 'Vérifié' ? 'warning.main' : 'success.main', pb: 1 }}>
           {toggleBadgeUser?.statut === 'Vérifié' ? <WarningAmberIcon /> : <VerifiedIcon />}
           <Typography variant="h6" sx={{ fontWeight: 800 }}>
             {toggleBadgeUser?.statut === 'Vérifié' ? 'Désactiver le badge' : 'Activer le badge'}
@@ -1889,6 +1945,99 @@ export default function AdminUsersPage() {
           >
             {isTogglingBadge ? 'Validation...' : 'Confirmer'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ════════ Dialog Examiner KYC ════════ */}
+      <Dialog
+        open={Boolean(kycReviewUser)}
+        onClose={() => setKycReviewUser(null)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ '& .MuiDialog-paper': { borderRadius: '24px', overflow: 'hidden' } }}
+      >
+        <Box sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
+            <BadgeIcon sx={{ fontSize: 28 }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>Examen KYC</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Vérification de l'identité de l'employeur
+            </Typography>
+          </Box>
+        </Box>
+        
+        <DialogContent sx={{ p: 3 }}>
+          {kycReviewUser && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box sx={{ p: 2.5, borderRadius: 3, bgcolor: 'background.default', border: `1px solid ${theme.palette.divider}` }}>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700, mb: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.75rem' }}>Employeur / Entreprise</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 800, mb: 1, fontSize: '1.1rem' }}>{kycReviewUser.companyName || kycReviewUser.nom}</Typography>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>Type de document attendu :</Typography>
+                  <Chip label={kycReviewUser.employerType === 'entreprise' ? 'RCCM / NUI (Entreprise)' : 'CNI / Passeport (Particulier)'} size="small" color="info" variant="outlined" sx={{ fontWeight: 700 }} />
+                </Box>
+              </Box>
+
+              {kycReviewUser.kycDocument ? (
+                <Button 
+                  variant="outlined" 
+                  color="primary"
+                  href={kycReviewUser.kycDocument} 
+                  target="_blank" 
+                  startIcon={<VisibilityIcon />}
+                  sx={{ py: 1.5, borderRadius: 2, fontWeight: 700, borderStyle: 'dashed', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
+                >
+                  Consulter le document fourni
+                </Button>
+              ) : (
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>Aucun document n'a été fourni par cet utilisateur.</Alert>
+              )}
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>Motif du rejet</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>À remplir obligatoirement si vous souhaitez rejeter la demande.</Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="Ex: Le document est flou ou illisible, veuillez renvoyer une version claire..."
+                  value={kycRejectionReason}
+                  onChange={(e) => setKycRejectionReason(e.target.value)}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 3, pt: 1, display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: 'space-between', gap: 2 }}>
+          <Button onClick={() => setKycReviewUser(null)} variant="text" color="inherit" sx={{ fontWeight: 700, width: { xs: '100%', sm: 'auto' } }} disabled={isKycUpdating}>
+            Fermer
+          </Button>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: { xs: '100%', sm: 'auto' } }}>
+            <Button
+              onClick={() => handleKycUpdate('rejected')}
+              variant="contained"
+              color="error"
+              disabled={isKycUpdating || !kycRejectionReason.trim()}
+              sx={{ borderRadius: '10px', fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}
+              startIcon={isKycUpdating && kycUpdateAction === 'rejected' ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {isKycUpdating && kycUpdateAction === 'rejected' ? 'Rejet...' : 'Rejeter la demande'}
+            </Button>
+            <Button
+              onClick={() => handleKycUpdate('approved')}
+              variant="contained"
+              color="success"
+              disabled={isKycUpdating}
+              startIcon={isKycUpdating ? <CircularProgress size={20} color="inherit" /> : <CheckCircleIcon />}
+              sx={{ borderRadius: '10px', fontWeight: 700 }}
+            >
+              Approuver
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
 

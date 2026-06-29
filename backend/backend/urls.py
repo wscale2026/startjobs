@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
-from users.views import UserViewSet, EmployerProfileViewSet, CandidateProfileViewSet, SkillViewSet, LanguageViewSet, ExperienceViewSet, RegisterView, UserMeView, UserProfileView, PublicSettingsView, CustomTokenObtainPairView, VerifyEmailView, ResendVerificationView, search_contacts
+from users.views import UserViewSet, EmployerProfileViewSet, CandidateProfileViewSet, SkillViewSet, LanguageViewSet, ExperienceViewSet, RegisterView, UserMeView, UserProfileView, PublicSettingsView, CustomTokenObtainPairView, VerifyEmailView, ResendVerificationView, search_contacts, SubmitKycView
 from users.password_views import PasswordResetRequestView, PasswordResetConfirmView
 from users.admin_views import AdminDashboardView, AdminMailingView, AdminSettingsView, AdminSendCredentialsView, AdminUpdateUserView
 from jobs.views import SectorViewSet, NeighborhoodViewSet, JobOfferViewSet, ApplicationViewSet
@@ -58,6 +58,7 @@ urlpatterns = [
     path('api/register/', RegisterView.as_view(), name='register'),
     path('api/users/me/', UserMeView.as_view(), name='user_me'),
     path('api/search-contacts/', search_contacts, name='search_contacts'),
+    path('api/users/submit-kyc/', SubmitKycView.as_view(), name='submit-kyc'),
     path('api/users/profile/<str:user_id>/', UserProfileView.as_view(), name='user_profile'),
     path('api/password_reset/', PasswordResetRequestView.as_view(), name='password_reset'),
     path('api/password_reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),

@@ -296,7 +296,7 @@ export default function ProfileDetailPage() {
         </Box>
 
         {/* Bio */}
-        <Typography variant="body1" sx={{ mt: 2.5, lineHeight: 1.75, color: 'text.secondary' }}>
+        <Typography variant="body1" sx={{ mt: 2.5, lineHeight: 1.75, color: 'text.secondary', whiteSpace: 'pre-wrap' }}>
           {worker.bio}
         </Typography>
 
@@ -402,7 +402,7 @@ export default function ProfileDetailPage() {
               <Box sx={{ p: 2.5, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>À propos de l'entreprise</Typography>
                 {worker.bio && worker.bio !== 'Aucune description renseignée.' ? (
-                  <Typography variant="body2" sx={{ lineHeight: 1.8, color: 'text.secondary' }}>{worker.bio}</Typography>
+                  <Typography variant="body2" sx={{ lineHeight: 1.8, color: 'text.secondary', whiteSpace: 'pre-wrap' }}>{worker.bio}</Typography>
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
                     <BusinessIcon sx={{ fontSize: 32, opacity: 0.3, mb: 1 }} />

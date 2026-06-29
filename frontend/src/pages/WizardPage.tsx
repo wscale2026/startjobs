@@ -45,32 +45,54 @@ const STEP_SUBTITLES = [
 const AVAILABILITY_OPTIONS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 const LANGUAGES = ['Français', 'Anglais', 'Haoussa', 'Bamiléké', 'Ewondo', 'Bassa', 'Arabe', 'Fulfuldé'];
 
+const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ\s\-]+$/;
+const PHONE_REGEX = /^(?:\+237\s?)?(6[256789]\d{7}|2[234]\d{7})$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const USERNAME_REGEX = /^[^\s]+$/;
+const TEXT_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s\,\.\-]+$/;
+
 // ─── Step Validation ──────────────────────────────────────────────────────────
-function validateStep(step: number, data: any): string | null {
+function validateStep(step: number, data: any): Record<string, string> {
+  const errors: Record<string, string> = {};
   switch (step) {
     case 0: {
-      if (!data.typeProfil) return 'Veuillez sélectionner un type de profil.';
-      if (!data.prenom?.trim()) return 'Le prénom est requis.';
-      if (!data.nom?.trim()) return 'Le nom est requis.';
-      if (!data.username?.trim()) return 'Le nom d\'utilisateur est requis.';
-      if (!data.email?.trim() || !/\S+@\S+\.\S+/.test(data.email)) return 'Une adresse email valide est requise.';
-      if (!data.phone?.trim()) return 'Le numéro de téléphone est requis.';
-      if (!data.password || data.password.length < 6) return 'Le mot de passe doit comporter au moins 6 caractères.';
-      if (!data.dateNaissance) return 'La date de naissance est requise.';
-      if (!data.ville) return 'La ville est requise.';
-      return null;
+      if (!data.typeProfil) errors.typeProfil = 'Veuillez sélectionner un type de profil.';
+      if (!data.prenom?.trim()) errors.prenom = 'Le prénom est requis.';
+      else if (!NAME_REGEX.test(data.prenom.trim())) errors.prenom = 'Le prénom contient des caractères invalides (lettres uniquement).';
+      
+      if (!data.nom?.trim()) errors.nom = 'Le nom est requis.';
+      else if (!NAME_REGEX.test(data.nom.trim())) errors.nom = 'Le nom contient des caractères invalides (lettres uniquement).';
+      
+      if (!data.username?.trim()) errors.username = 'Le nom d\'utilisateur est requis.';
+      else if (!USERNAME_REGEX.test(data.username)) errors.username = 'Le nom d\'utilisateur ne doit pas contenir d\'espace.';
+      
+      if (!data.email?.trim()) errors.email = 'L\'adresse email est requise.';
+      else if (!EMAIL_REGEX.test(data.email.trim())) errors.email = 'Une adresse email valide est requise.';
+      
+      if (!data.phone?.trim() || !PHONE_REGEX.test(data.phone.trim())) errors.phone = 'Numéro de téléphone camerounais invalide.';
+      if (!data.password || data.password.length < 6) errors.password = 'Le mot de passe doit comporter au moins 6 caractères.';
+      if (!data.dateNaissance) errors.dateNaissance = 'La date de naissance est requise.';
+      if (!data.ville) errors.ville = 'La ville est requise.';
+      break;
     }
     case 1: {
-      if (!data.domaines || data.domaines.length === 0) return 'Sélectionnez au moins un domaine.';
-      return null;
+      if (!data.domaines || data.domaines.length === 0) errors.domaines = 'Sélectionnez au moins un domaine.';
+      if (data.sousCompetences && data.sousCompetences.length > 0) {
+        for (const sc of data.sousCompetences) {
+          if (sc.trim() && !TEXT_REGEX.test(sc.trim())) {
+            errors.sousCompetences = 'Les sous-compétences contiennent des caractères invalides.';
+            break;
+          }
+        }
+      }
+      break;
     }
     case 4: {
-      if (!data.disponibilites || data.disponibilites.length === 0) return 'Sélectionnez au moins un jour de disponibilité.';
-      return null;
+      if (!data.disponibilites || data.disponibilites.length === 0) errors.disponibilites = 'Sélectionnez au moins un jour de disponibilité.';
+      break;
     }
-    default:
-      return null;
   }
+  return errors;
 }
 
 // ─── Step 1: Identity ───────────────────────────────────────────────────────
@@ -495,22 +517,27 @@ export default function WizardPage() {
   const { currentStep, totalSteps, data, completed } = useAppSelector((s) => s.wizard);
   const { allow_registrations, site_name, logo } = useAppSelector((s: any) => s.siteSettings);
   const [loading, setLoading] = React.useState(false);
-  const [stepError, setStepError] = React.useState<string | null>(null);
+  const [stepErrors, setStepErrors] = React.useState<Record<string, string>>({});
   const [emailVerificationSent, setEmailVerificationSent] = React.useState(false);
   const [photoFile, setPhotoFile] = React.useState<File | null>(null);
 
   const handleChange = (patch: any) => {
     dispatch(updateData(patch));
-    setStepError(null);
+    const field = Object.keys(patch)[0];
+    if (field && stepErrors[field]) {
+       const newErrors = { ...stepErrors };
+       delete newErrors[field];
+       setStepErrors(newErrors);
+    }
   };
 
   const handleNext = () => {
-    const error = validateStep(currentStep, data);
-    if (error) {
-      setStepError(error);
+    const errs = validateStep(currentStep, data);
+    if (Object.keys(errs).length > 0) {
+      setStepErrors(errs);
       return;
     }
-    setStepError(null);
+    setStepErrors({});
     if (currentStep < totalSteps - 1) {
       dispatch(nextStep());
     } else {
@@ -591,12 +618,12 @@ export default function WizardPage() {
   }
 
   const steps = [
-    <Step1 data={data} onChange={handleChange} setPhotoFile={setPhotoFile} errors={stepError ? { general: stepError } : {}} />,
-    <Step2 data={data} onChange={handleChange} errors={stepError ? { domaines: stepError } : {}} />,
-    <Step3 data={data} onChange={handleChange} />,
-    <Step4 data={data} onChange={handleChange} />,
-    <Step5 data={data} onChange={handleChange} errors={stepError ? { disponibilites: stepError } : {}} />,
-    <Step6 data={data} onChange={handleChange} />,
+    <Step1 data={data} onChange={handleChange} setPhotoFile={setPhotoFile} errors={stepErrors} />,
+    <Step2 data={data} onChange={handleChange} errors={stepErrors} />,
+    <Step3 data={data} onChange={handleChange} errors={stepErrors} />,
+    <Step4 data={data} onChange={handleChange} errors={stepErrors} />,
+    <Step5 data={data} onChange={handleChange} errors={stepErrors} />,
+    <Step6 data={data} onChange={handleChange} errors={stepErrors} />,
   ];
 
   if (!allow_registrations) {
@@ -653,14 +680,7 @@ export default function WizardPage() {
 
       <Divider sx={{ mb: 3 }} />
 
-      {/* Step validation error banner */}
-      {stepError && (
-        <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: 'error.lighter', border: '1px solid', borderColor: 'error.light' }}>
-          <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-            ⚠️ {stepError}
-          </Typography>
-        </Box>
-      )}
+
 
       {/* Step content */}
       <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column' }}>
@@ -676,7 +696,7 @@ export default function WizardPage() {
           onClick={() => {
             if (currentStep === 0) navigate('/');
             else dispatch(prevStep());
-            setStepError(null);
+            setStepErrors({});
           }}
           sx={{ flex: 1 }}
         >

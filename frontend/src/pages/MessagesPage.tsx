@@ -41,6 +41,7 @@ import { showSnackbar } from '../store/slices/snackbarSlice';
 import PageLoader from '../components/PageLoader';
 
 let cachedConversations: Conversation[] | null = null;
+let cachedActiveId: string | null = null;
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type MessageStatus = 'sent' | 'delivered' | 'read';
@@ -786,6 +787,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
               ? msg.fromMe ? '#E9EDEF' : '#E9EDEF'
               : msg.fromMe ? '#111B21' : '#111B21',
             wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
           }}
         >
           {msg.text}
@@ -972,9 +974,9 @@ export default function MessagesPage() {
   const authStatus = useAppSelector((state) => state.auth.status);
   const currentRole = useAppSelector((state) => state.auth.role);
   const routerNavigate = useNavigate();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(cachedActiveId);
   const [conversations, setConversations] = useState<Conversation[]>(cachedConversations || []);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!cachedConversations);
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [contactSearchOpen, setContactSearchOpen] = useState(false);
@@ -991,6 +993,10 @@ export default function MessagesPage() {
     const total = conversations.reduce((sum, c) => sum + c.unread, 0);
     dispatch(setUnreadCount(total));
   }, [conversations, dispatch]);
+
+  useEffect(() => {
+    cachedActiveId = activeId;
+  }, [activeId]);
 
   useEffect(() => {
     if (!currentUser && (authStatus === 'succeeded' || authStatus === 'failed')) {

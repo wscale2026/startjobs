@@ -56,6 +56,11 @@ const QUESTIONS = [
   },
 ];
 
+const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s\-\.\&]+$/;
+const PHONE_REGEX = /^(?:\+237\s?)?(6[256789]\d{7}|2[234]\d{7})$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const USERNAME_REGEX = /^[^\s]+$/;
+
 export default function EmployerOnboardingPage() {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -68,6 +73,7 @@ export default function EmployerOnboardingPage() {
   const [geolocating, setGeolocating] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleGeolocate = () => {
     if (!navigator.geolocation) {
@@ -95,9 +101,40 @@ export default function EmployerOnboardingPage() {
   const current = QUESTIONS[step];
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
-  const handleAnswer = (id: string, val: any) => setAnswers((prev) => ({ ...prev, [id]: val }));
+  const handleAnswer = (id: string, val: any) => {
+    setAnswers((prev) => ({ ...prev, [id]: val }));
+    if (fieldErrors[id]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  };
 
   const handleNext = () => {
+    if (step === 0) {
+      const errs: Record<string, string> = {};
+      if (!answers['nom']?.trim()) errs['nom'] = "Le nom de l'entreprise est requis.";
+      else if (!NAME_REGEX.test(answers['nom'].trim())) errs['nom'] = "Le nom de l'entreprise contient des caractères invalides.";
+      
+      if (!answers['username']?.trim()) errs['username'] = "Le nom d'utilisateur est requis.";
+      else if (!USERNAME_REGEX.test(answers['username'])) errs['username'] = "Le nom d'utilisateur ne doit pas contenir d'espace.";
+      
+      if (!answers['email']?.trim()) errs['email'] = "L'adresse email est requise.";
+      else if (!EMAIL_REGEX.test(answers['email'].trim())) errs['email'] = "Une adresse email valide est requise.";
+      
+      if (!answers['phone']?.trim() || !PHONE_REGEX.test(answers['phone'].trim())) errs['phone'] = "Numéro de téléphone camerounais invalide.";
+      
+      if (!answers['password'] || answers['password'].length < 6) errs['password'] = "Le mot de passe doit comporter au moins 6 caractères.";
+
+      if (Object.keys(errs).length > 0) {
+        setFieldErrors(errs);
+        return;
+      }
+      setFieldErrors({});
+    }
+    
     if (step < QUESTIONS.length - 1) {
       setStep((s) => s + 1);
     } else {
@@ -307,6 +344,8 @@ export default function EmployerOnboardingPage() {
                 variant="outlined"
                 value={answers['nom'] || ''}
                 onChange={(e) => handleAnswer('nom', e.target.value)}
+                error={!!fieldErrors['nom']}
+                helperText={fieldErrors['nom']}
               />
               <TextField
                 fullWidth
@@ -315,6 +354,8 @@ export default function EmployerOnboardingPage() {
                 variant="outlined"
                 value={answers['username'] || ''}
                 onChange={(e) => handleAnswer('username', e.target.value)}
+                error={!!fieldErrors['username']}
+                helperText={fieldErrors['username']}
               />
               <TextField
                 fullWidth
@@ -323,6 +364,8 @@ export default function EmployerOnboardingPage() {
                 variant="outlined"
                 value={answers['email'] || ''}
                 onChange={(e) => handleAnswer('email', e.target.value)}
+                error={!!fieldErrors['email']}
+                helperText={fieldErrors['email']}
               />
               <TextField
                 fullWidth
@@ -331,6 +374,8 @@ export default function EmployerOnboardingPage() {
                 variant="outlined"
                 value={answers['phone'] || ''}
                 onChange={(e) => handleAnswer('phone', e.target.value)}
+                error={!!fieldErrors['phone']}
+                helperText={fieldErrors['phone']}
               />
               <TextField
                 fullWidth
@@ -339,6 +384,8 @@ export default function EmployerOnboardingPage() {
                 variant="outlined"
                 value={answers['password'] || ''}
                 onChange={(e) => handleAnswer('password', e.target.value)}
+                error={!!fieldErrors['password']}
+                helperText={fieldErrors['password']}
                 slotProps={{
                   input: {
                     endAdornment: (

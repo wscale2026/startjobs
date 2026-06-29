@@ -298,26 +298,28 @@ export default function CandidateDashboardPage() {
               : `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.12)}, ${alpha(theme.palette.warning.light, 0.07)})`,
             border: `1px solid ${alpha(theme.palette.warning.main, 0.4)}`,
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
             gap: 2,
-            flexWrap: 'wrap',
           }}
         >
-          <WarningAmberIcon sx={{ color: 'warning.main', flexShrink: 0 }} />
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '0.95rem' }}>
-              ⚠️ Votre profil est incomplet !
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-              Complétez votre profil (photo, bio, compétences, quartier) pour maximiser vos chances d'être recruté.
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0 }}>
+            <WarningAmberIcon sx={{ color: 'warning.main', flexShrink: 0, mt: 0.25 }} />
+            <Box>
+              <Typography sx={{ fontWeight: 800, color: 'warning.dark', fontSize: '0.95rem' }}>
+                ⚠️ Votre profil est incomplet !
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Complétez votre profil (photo, bio, compétences, quartier) pour maximiser vos chances d'être recruté.
+              </Typography>
+            </Box>
           </Box>
           <Button
             variant="contained"
             size="small"
             color="warning"
             onClick={() => navigate('/profile')}
-            sx={{ fontWeight: 700, borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}
+            sx={{ fontWeight: 700, borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0, width: { xs: '100%', sm: 'auto' }, py: { xs: 1, sm: 0.5 } }}
           >
             Compléter mon profil
           </Button>

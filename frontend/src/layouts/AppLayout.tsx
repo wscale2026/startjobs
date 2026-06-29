@@ -135,9 +135,20 @@ export default function AppLayout() {
     setLogoutOpen(false);
   };
 
-  // If user is employer, ALWAYS show employer nav
   const isEmployer = role === 'employer';
-  const baseNavItems = isEmployer ? EMPLOYER_NAV_ITEMS : CANDIDATE_NAV_ITEMS;
+  const suspendEmployerFeatures = useAppSelector((state: any) => state.siteSettings.suspend_employer_features);
+  const kycStatus = user?.employer_profile?.kyc_status;
+  
+  // Filter base nav items for employer
+  let baseNavItems = isEmployer ? EMPLOYER_NAV_ITEMS : CANDIDATE_NAV_ITEMS;
+  
+  if (isEmployer) {
+    const isRestricted = suspendEmployerFeatures || (kycStatus !== 'approved');
+    if (isRestricted) {
+      baseNavItems = baseNavItems.filter(item => !['/search', '/offers', '/messages'].includes(item.path));
+    }
+  }
+
   const navItems = baseNavItems.map(item => 
     item.path === '/messages' ? { ...item, badge: unreadCount > 0 ? unreadCount : undefined } : item
   );

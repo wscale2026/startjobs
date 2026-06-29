@@ -27,6 +27,10 @@ interface User {
     longitude?: number;
     recruits_per_month?: string;
     description?: string;
+    kyc_status?: string;
+    kyc_document?: string;
+    kyc_rejection_reason?: string;
+    employer_type?: string;
   };
   candidate_profile?: {
     id: number;
