@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Box, Typography, Avatar, Button, Chip, useTheme, alpha, Grid,
-  IconButton, Paper, Stack, Divider,
+  IconButton, Paper, Stack, Divider, Skeleton
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
@@ -9,7 +9,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import PlaceIcon from '@mui/icons-material/Place';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import StarIcon from '@mui/icons-material/Star';
-import VerifiedIcon from '@mui/icons-material/Verified';
+import VerifiedBadge from '../components/VerifiedBadge';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import WorkIcon from '@mui/icons-material/Work';
@@ -22,7 +22,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_WORKERS } from '../mocks/workers';
 import ExperienceCard from '../components/ExperienceCard';
 import TikTokShareModal from '../components/TikTokShareModal';
-import api from '../utils/api';
+import api, { getFullMediaUrl } from '../utils/api';
+import { useAvatarViewer } from '../components/AvatarViewer';
 
 export default function ProfileDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +35,7 @@ export default function ProfileDetailPage() {
   const [loading, setLoading] = React.useState(true);
   const [showContact, setShowContact] = React.useState(false);
   const [shareOpen, setShareOpen] = React.useState(false);
+  const { openViewer } = useAvatarViewer();
 
   React.useEffect(() => {
     if (!id) return;
@@ -163,8 +165,47 @@ export default function ProfileDetailPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-        <Typography>Chargement du profil...</Typography>
+      <Box sx={{ maxWidth: 860, mx: 'auto', animation: 'fadeIn 0.5s ease-out' }}>
+        {/* Skeleton Back Nav */}
+        <Box sx={{ mb: 4 }}>
+          <Skeleton variant="rounded" width={100} height={36} sx={{ borderRadius: '8px' }} />
+        </Box>
+
+        {/* Skeleton Profile Header */}
+        <Box sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper', mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start', mb: 3 }}>
+            <Skeleton variant="rounded" width={80} height={80} sx={{ borderRadius: '16px' }} />
+            <Box sx={{ flex: 1 }}>
+              <Skeleton width="40%" height={36} sx={{ mb: 1 }} />
+              <Skeleton width="25%" height={24} sx={{ mb: 1.5 }} />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Skeleton variant="rounded" width={80} height={28} />
+                <Skeleton variant="rounded" width={120} height={28} />
+              </Box>
+            </Box>
+          </Box>
+          <Box sx={{ mb: 3 }}>
+            <Skeleton width="100%" />
+            <Skeleton width="100%" />
+            <Skeleton width="80%" />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Skeleton variant="rounded" width={160} height={40} sx={{ borderRadius: '8px' }} />
+            <Skeleton variant="rounded" width={120} height={40} sx={{ borderRadius: '8px' }} />
+          </Box>
+        </Box>
+
+        {/* Skeleton Body Grid */}
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Skeleton variant="rounded" height={140} sx={{ borderRadius: '12px', mb: 2 }} />
+            <Skeleton variant="rounded" height={180} sx={{ borderRadius: '12px', mb: 2 }} />
+            <Skeleton variant="rounded" height={160} sx={{ borderRadius: '12px' }} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Skeleton variant="rounded" height={480} sx={{ borderRadius: '12px' }} />
+          </Grid>
+        </Grid>
       </Box>
     );
   }
@@ -183,8 +224,8 @@ export default function ProfileDetailPage() {
   const isEmployer = profileType === 'employer' || worker.role === 'employer';
   const whatsappMsg = encodeURIComponent(
     isEmployer
-      ? `Bonjour ${worker.prenom}, j'ai trouvé votre profil employeur sur StartJobs. Je souhaite vous contacter.`
-      : `Bonjour ${worker.prenom}, j'ai trouvé votre profil sur StartJobs. Je suis intéressé(e) par vos services.`
+      ? `Bonjour ${worker.nom}, j'ai trouvé votre profil employeur sur StartJobs. Je souhaite vous contacter.`
+      : `Bonjour ${worker.nom}, j'ai trouvé votre profil sur StartJobs. Je suis intéressé(e) par vos services.`
   );
   const sortedXP = [...(worker.experiences || [])].sort((a: any) => (a.type === 'verified' ? -1 : 1));
 
@@ -222,7 +263,13 @@ export default function ProfileDetailPage() {
 
         <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           <Avatar
-            src={worker.photo || undefined}
+            src={worker.photo ? getFullMediaUrl(worker.photo) || undefined : undefined}
+            onClick={() => openViewer(
+              worker.photo ? getFullMediaUrl(worker.photo) : null,
+              `${worker.nom} ${worker.prenom}`.trim(),
+              worker.initials,
+              worker.photoColor
+            )}
             sx={{
               width: 80,
               height: 80,
@@ -231,6 +278,9 @@ export default function ProfileDetailPage() {
               fontWeight: 800,
               borderRadius: '16px',
               flexShrink: 0,
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': { transform: 'scale(1.06)', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' },
             }}
           >
             {!worker.photo && worker.initials}
@@ -239,10 +289,10 @@ export default function ProfileDetailPage() {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
               <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.025em' }}>
-                {worker.prenom} {worker.nom}
+                {worker.nom} {worker.prenom}
               </Typography>
               {worker.verified && (
-                <VerifiedIcon sx={{ color: 'secondary.main', fontSize: 20 }} />
+                <VerifiedBadge size="large" />
               )}
               {isEmployer && (
                 <Chip
@@ -540,7 +590,7 @@ export default function ProfileDetailPage() {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         shareUrl={window.location.href}
-        title={`Découvrez le profil de ${worker.prenom} sur StartJobs !`}
+        title={`Découvrez le profil de ${worker.nom} sur StartJobs !`}
       />
     </Box>
   );

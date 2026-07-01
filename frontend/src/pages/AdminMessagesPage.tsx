@@ -1076,7 +1076,7 @@ export default function AdminMessagesPage() {
 
           return {
             id: String(convo.id),
-            name: (otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
+            name: (otherParticipant ? `${otherParticipant.last_name || ''} ${otherParticipant.first_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
             role: otherParticipant?.employer_profile ? 'Employeur' : 'Candidat',
             lastMsg: lastMessageText || 'Aucun message',
             time: lastMessageTime,
@@ -1200,7 +1200,7 @@ export default function AdminMessagesPage() {
 
                 return {
                   id: String(convo.id),
-                  name: (otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
+                  name: (otherParticipant ? `${otherParticipant.last_name || ''} ${otherParticipant.first_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
                   role: otherParticipant?.employer_profile ? 'Employeur' : 'Candidat',
                   lastMsg: lastMessageText || 'Aucun message',
                   time: lastMessageTime,
@@ -1382,7 +1382,7 @@ export default function AdminMessagesPage() {
                 const convoUnreadCount = mappedMessages.filter((m: any) => !m.fromMe && m.status !== 'read').length;
                 newConvos.unshift({
                   id: String(convo.id),
-                  name: otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User',
+                  name: otherParticipant ? `${otherParticipant.last_name || ''} ${otherParticipant.first_name || ''}`.trim() || otherParticipant.username : 'StartJobs User',
                   role: otherParticipant?.employer_profile ? 'Employeur' : 'Candidat',
                   lastMsg: mappedMessages.length > 0 ? mappedMessages[mappedMessages.length - 1].text : 'Aucun message',
                   time: mappedMessages.length > 0 ? mappedMessages[mappedMessages.length - 1].time : '12:00',
@@ -1824,14 +1824,17 @@ export default function AdminMessagesPage() {
 
   const confirmDeleteConvo = () => {
     if (convoToDelete) {
-      api.post(`conversations/${convoToDelete}/delete_for_me/`)
-        .then(() => {
-          setConversations(prev => prev.filter(c => c.id !== convoToDelete));
-          if (activeId === convoToDelete) {
-            setActiveId(null);
-          }
-          dispatch(showSnackbar({ message: 'Discussion supprimée', severity: 'success' }));
-        })
+      const convoIdToDel = convoToDelete;
+      
+      // Optimistic update for instant deletion
+      setConversations(prev => prev.filter(c => c.id !== convoIdToDel));
+      if (activeId === convoIdToDel) {
+        setActiveId(null);
+      }
+      dispatch(showSnackbar({ message: 'Discussion supprimée', severity: 'success' }));
+
+      // API Call in the background
+      api.post(`conversations/${convoIdToDel}/delete_for_me/`)
         .catch(err => console.error("Error deleting conversation", err));
     }
     setDeleteDialogOpen(false);
@@ -1847,7 +1850,7 @@ export default function AdminMessagesPage() {
         if (!existingConvo) {
           const newConvoItem: Conversation = {
             id: newConvoId,
-            name: user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : user.username,
+            name: user.last_name || user.first_name ? `${user.last_name || ''} ${user.first_name || ''}`.trim() : user.username,
             role: user.role === 'employer' ? 'Employeur' : 'Candidat',
             lastMsg: 'Nouvelle discussion',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),

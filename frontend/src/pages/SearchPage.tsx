@@ -14,7 +14,7 @@ import { useAppSelector, useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { MOCK_WORKERS } from '../mocks/workers';
 import api from '../utils/api';
-import PageLoader from '../components/PageLoader';
+import CardSkeleton from '../components/CardSkeleton';
 
 let cachedRawCandidates: any[] | null = null;
 let cachedAdsSearch: any[] | null = null;
@@ -174,7 +174,16 @@ export default function SearchPage() {
   }, [candidates, query, domaine, typeProfil, disponible, rayon, globalQuartier, userCoords]);
 
   if (isLoading) {
-    return <PageLoader text="Recherche des meilleurs profils..." />;
+    return (
+      <Box sx={{ p: 2 }}>
+        <SearchBar />
+        <Grid container spacing={2} sx={{ mt: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}><CardSkeleton count={3} /></Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} sx={{ display: { xs: 'none', sm: 'block' } }}><CardSkeleton count={3} /></Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} sx={{ display: { xs: 'none', lg: 'block' } }}><CardSkeleton count={3} /></Grid>
+        </Grid>
+      </Box>
+    );
   }
 
   return (
@@ -187,53 +196,59 @@ export default function SearchPage() {
         elevation={0}
         sx={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'stretch', sm: 'center' },
           justifyContent: 'space-between',
-          p: 2,
+          p: { xs: 2, sm: 2 },
           mb: 3,
           mt: 3,
-          borderRadius: 3,
-          bgcolor: alpha(theme.palette.primary.main, 0.04),
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          gap: 2,
+          borderRadius: 4,
+          bgcolor: isLocating ? alpha(theme.palette.warning.main, 0.05) : (userCoords ? alpha(theme.palette.success.main, 0.05) : alpha(theme.palette.primary.main, 0.04)),
+          border: `1px solid ${isLocating ? alpha(theme.palette.warning.main, 0.2) : (userCoords ? alpha(theme.palette.success.main, 0.2) : alpha(theme.palette.primary.main, 0.1))}`,
+          transition: 'all 0.3s ease'
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box
             sx={{
-              width: 40, height: 40, borderRadius: '10px',
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              width: 44, height: 44, borderRadius: '12px',
+              bgcolor: isLocating ? alpha(theme.palette.warning.main, 0.1) : (userCoords ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.primary.main, 0.1)),
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}
           >
-            <PlaceIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+            <PlaceIcon sx={{ color: isLocating ? 'warning.main' : (userCoords ? 'success.main' : 'primary.main'), fontSize: 24 }} />
           </Box>
           <Box>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>Candidats autour de vous</Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="body1" sx={{ fontWeight: 700, letterSpacing: '-0.01em' }}>
+              Candidats autour de vous
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, lineHeight: 1.3 }}>
               {userCoords ? 'Rayon calculé autour de votre position exacte' : (globalQuartier !== 'Tous les quartiers' ? `Basé sur votre recherche: ${globalQuartier}` : 'Activez la géolocalisation pour voir les candidats à proximité')}
             </Typography>
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
           {userCoords && (
             <Button
               variant="outlined"
-              size="small"
+              size="medium"
               startIcon={<PublicIcon />}
               onClick={handleClearLocation}
-              sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, color: 'text.secondary', borderColor: 'divider' }}
+              sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600, color: 'text.secondary', borderColor: 'divider', py: { xs: 1, sm: 0.5 } }}
             >
               Tous les candidats
             </Button>
           )}
           <Button
             variant="contained"
-            size="small"
+            size="medium"
+            color={userCoords ? "success" : "primary"}
             startIcon={isLocating ? <CircularProgress size={16} color="inherit" /> : <PlaceIcon />}
             className="pressable"
             disabled={isLocating || !!userCoords}
             onClick={handleLocateMe}
-            sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+            sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 700, boxShadow: 'none', py: { xs: 1, sm: 0.5 } }}
           >
             {isLocating ? 'Recherche...' : (userCoords ? 'Position active' : 'Me localiser')}
           </Button>

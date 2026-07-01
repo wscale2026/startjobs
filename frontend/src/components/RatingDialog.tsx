@@ -111,7 +111,7 @@ export default function RatingDialog({ open, missionId, onClose, onSuccess }: Ra
           <Typography variant="h6" sx={{ fontWeight: 800 }}>Évaluer la mission</Typography>
           {appData && (
             <Typography variant="caption" color="text.secondary">
-              {appData.candidate?.user?.first_name} {appData.candidate?.user?.last_name} · {appData.job_offer?.title}
+              {appData.candidate?.user?.last_name} {appData.candidate?.user?.first_name} · {appData.job_offer?.title}
             </Typography>
           )}
         </Box>

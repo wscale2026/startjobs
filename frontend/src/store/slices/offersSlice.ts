@@ -132,14 +132,24 @@ const offersSlice = createSlice({
       .addCase(createOffer.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
       })
+      .addCase(updateOffer.pending, (state, action) => {
+        const { id, data } = action.meta.arg;
+        const index = state.items.findIndex(o => String(o.id) === String(id));
+        if (index !== -1) {
+          state.items[index] = { ...state.items[index], ...data };
+        }
+      })
       .addCase(updateOffer.fulfilled, (state, action) => {
-        const index = state.items.findIndex(o => o.id === action.payload.id);
+        const index = state.items.findIndex(o => String(o.id) === action.payload.id);
         if (index !== -1) {
           state.items[index] = action.payload;
         }
       })
+      .addCase(deleteOffer.pending, (state, action) => {
+        state.items = state.items.filter((offer) => String(offer.id) !== String(action.meta.arg));
+      })
       .addCase(deleteOffer.fulfilled, (state, action) => {
-        state.items = state.items.filter((offer) => offer.id !== String(action.payload));
+        state.items = state.items.filter((offer) => String(offer.id) !== String(action.payload));
       });
   },
 });

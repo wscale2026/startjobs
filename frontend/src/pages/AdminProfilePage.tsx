@@ -89,11 +89,10 @@ export default function AdminProfilePage() {
 
         {/* Colonne Formulaire */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} sx={{ p: { xs: 3, md: 5 }, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}` }}>
-
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon color="primary" /> Informations Personnelles
-            </Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, ml: 2, color: 'text.secondary', textTransform: 'uppercase' }}>
+            Informations Personnelles
+          </Typography>
+          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} sx={{ p: 3, mb: 4, borderRadius: '16px', border: `1px solid ${theme.palette.divider}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -112,12 +111,12 @@ export default function AdminProfilePage() {
                 />
               </Grid>
             </Grid>
+          </Paper>
 
-            <Divider sx={{ my: 4 }} />
-
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SecurityIcon color="primary" /> Sécurité
-            </Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, ml: 2, color: 'text.secondary', textTransform: 'uppercase' }}>
+            Sécurité
+          </Typography>
+          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} sx={{ p: 3, borderRadius: '16px', border: `1px solid ${theme.palette.divider}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Saisissez un nouveau mot de passe ci-dessous pour le modifier.
             </Typography>
@@ -148,7 +147,7 @@ export default function AdminProfilePage() {
               </Grid>
             </Grid>
 
-            <Box sx={{ mt: 5, display: 'flex', justifyContent: 'flex-end' }}>
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
               <Button
                 variant="contained"
                 size="large"

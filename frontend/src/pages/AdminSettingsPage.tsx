@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Paper, useTheme, TextField, Grid, Switch, Divider, Button, alpha, CircularProgress, Chip, IconButton } from '@mui/material';
+import { Box, Typography, Paper, useTheme, TextField, Grid, Switch, Divider, Button, alpha, CircularProgress, Chip, IconButton, Avatar } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SecurityIcon from '@mui/icons-material/Security';
 import PublicIcon from '@mui/icons-material/Public';
@@ -169,10 +169,10 @@ export default function AdminSettingsPage() {
       <Grid container spacing={4}>
         {/* Section Identité & Logo */}
         <Grid size={{ xs: 12 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ p: { xs: 3, md: 5 }, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}` }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <SettingsIcon color="primary" /> Identité Visuelle & Contact
-            </Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, ml: 2, color: 'text.secondary', textTransform: 'uppercase' }}>
+            Identité Visuelle & Contact
+          </Typography>
+          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ borderRadius: '16px', border: `1px solid ${theme.palette.divider}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)', overflow: 'hidden', p: 2 }}>
             <Grid container spacing={4} sx={{ alignItems: 'flex-start' }}>
               
               <Grid size={{ xs: 12, md: 4 }}>
@@ -234,19 +234,20 @@ export default function AdminSettingsPage() {
 
         {/* Section Sécurité & Accès */}
         <Grid size={{ xs: 12 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} sx={{ p: { xs: 3, md: 5 }, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}` }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <SecurityIcon color="warning" /> Paramètres Système & Accès
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, ml: 2, color: 'text.secondary', textTransform: 'uppercase' }}>
+            Paramètres Système & Accès
+          </Typography>
+          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} sx={{ borderRadius: '16px', border: `1px solid ${theme.palette.divider}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               {/* Maintenance */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2.5, borderRadius: '16px', bgcolor: settings.maintenance_mode ? alpha(theme.palette.error.main, 0.08) : alpha(theme.palette.error.main, 0.03), border: `1px solid ${alpha(theme.palette.error.main, settings.maintenance_mode ? 0.4 : 0.15)}`, transition: 'all 0.3s' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <WarningAmberIcon color="error" />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: settings.maintenance_mode ? alpha(theme.palette.error.main, 0.05) : 'transparent', transition: 'all 0.3s' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), color: 'error.main', width: 36, height: 36 }}>
+                    <WarningAmberIcon fontSize="small" />
+                  </Avatar>
                   <Box>
-                    <Typography sx={{ fontWeight: 800, color: 'error.main' }}>Mode Maintenance</Typography>
-                    <Typography variant="body2" color="text.secondary">Désactive l'accès public — seuls les administrateurs peuvent se connecter.</Typography>
+                    <Typography sx={{ fontWeight: 700, color: settings.maintenance_mode ? 'error.main' : 'text.primary' }}>Mode Maintenance</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>Désactive l'accès public.</Typography>
                   </Box>
                 </Box>
                 <Switch checked={settings.maintenance_mode} onChange={handleChange('maintenance_mode')} color="error" />
@@ -254,60 +255,54 @@ export default function AdminSettingsPage() {
 
               <Divider />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                 <Box>
                   <Typography sx={{ fontWeight: 700 }}>Ouverture des Inscriptions</Typography>
-                  <Typography variant="body2" color="text.secondary">Permet aux nouveaux candidats et employeurs de créer un compte.</Typography>
                 </Box>
                 <Switch checked={settings.allow_registrations} onChange={handleChange('allow_registrations')} color="success" />
               </Box>
 
               <Divider />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                 <Box>
                   <Typography sx={{ fontWeight: 700 }}>Vérification Email Obligatoire</Typography>
-                  <Typography variant="body2" color="text.secondary">Exige que l'utilisateur valide son adresse email pour pouvoir postuler.</Typography>
                 </Box>
                 <Switch checked={settings.require_email_verification} onChange={handleChange('require_email_verification')} color="primary" />
               </Box>
 
               <Divider />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                 <Box>
                   <Typography sx={{ fontWeight: 700 }}>Notifier les Admins (Candidats)</Typography>
-                  <Typography variant="body2" color="text.secondary">Envoie un email aux administrateurs lorsqu'un nouveau candidat s'inscrit.</Typography>
                 </Box>
                 <Switch checked={settings.notify_admins_on_registration} onChange={handleChange('notify_admins_on_registration')} color="primary" />
               </Box>
 
               <Divider />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                 <Box>
                   <Typography sx={{ fontWeight: 700 }}>Notifier les Admins (Employeurs)</Typography>
-                  <Typography variant="body2" color="text.secondary">Envoie un email aux administrateurs lorsqu'un nouvel employeur s'inscrit.</Typography>
                 </Box>
                 <Switch checked={settings.notify_admins_on_employer_registration} onChange={handleChange('notify_admins_on_employer_registration')} color="secondary" />
               </Box>
 
               <Divider />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, bgcolor: settings.suspend_employer_features ? alpha(theme.palette.error.main, 0.05) : 'transparent', borderRadius: '12px' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: settings.suspend_employer_features ? alpha(theme.palette.error.main, 0.05) : 'transparent' }}>
                 <Box>
                   <Typography sx={{ fontWeight: 700, color: settings.suspend_employer_features ? 'error.main' : 'text.primary' }}>Suspendre les fonctionnalités employeur</Typography>
-                  <Typography variant="body2" color="text.secondary">Masque temporairement les menus "Liste des candidats", "Messages", et "Ajout d'offre" dans les tableaux de bord employeurs.</Typography>
                 </Box>
                 <Switch checked={settings.suspend_employer_features} onChange={handleChange('suspend_employer_features')} color="error" />
               </Box>
 
               <Divider />
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
                 <Box>
                   <Typography sx={{ fontWeight: 700 }}>Afficher Compte à Rebours (Offres Vides)</Typography>
-                  <Typography variant="body2" color="text.secondary">Affiche automatiquement un compte à rebours de 30 jours pour les candidats s'il n'y a aucune offre d'emploi disponible.</Typography>
                 </Box>
                 <Switch checked={settings.show_empty_offers_countdown} onChange={handleChange('show_empty_offers_countdown')} color="secondary" />
               </Box>
@@ -317,28 +312,24 @@ export default function AdminSettingsPage() {
 
         {/* Section SEO */}
         <Grid size={{ xs: 12 }}>
-          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} sx={{ p: { xs: 3, md: 5 }, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}` }}>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <PublicIcon color="info" /> Référencement Naturel (SEO)
-            </Typography>
-            <Grid container spacing={4}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth label="Balise Title Globale" value={settings.seo_title}
-                  onChange={handleChange('seo_title')} variant="outlined"
-                  helperText="Titre principal affiché dans les onglets du navigateur et les résultats Google"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth multiline rows={3} label="Meta Description Globale" value={settings.seo_description}
-                  onChange={handleChange('seo_description')} variant="outlined"
-                  helperText={`${settings.seo_description.length}/160 caractères recommandés pour un bon référencement`}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                />
-              </Grid>
-            </Grid>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, ml: 2, color: 'text.secondary', textTransform: 'uppercase' }}>
+            Référencement Naturel (SEO)
+          </Typography>
+          <Paper component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} sx={{ borderRadius: '16px', border: `1px solid ${theme.palette.divider}`, boxShadow: '0 2px 10px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+            <Box sx={{ p: 2 }}>
+              <TextField
+                fullWidth label="Balise Title Globale" value={settings.seo_title}
+                onChange={handleChange('seo_title')} variant="standard"
+                slotProps={{ input: { disableUnderline: true, sx: { fontWeight: 600 } } }}
+                sx={{ mb: 2 }}
+              />
+              <Divider sx={{ mb: 2 }} />
+              <TextField
+                fullWidth multiline rows={3} label="Meta Description Globale" value={settings.seo_description}
+                onChange={handleChange('seo_description')} variant="standard"
+                slotProps={{ input: { disableUnderline: true, sx: { color: 'text.secondary' } } }}
+              />
+            </Box>
           </Paper>
         </Grid>
       </Grid>

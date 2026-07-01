@@ -39,6 +39,7 @@ import { setUnreadCount, sendMessage as sendMessageAction, markAsRead, deleteMes
 import api from '../utils/api';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import PageLoader from '../components/PageLoader';
+import { useAvatarViewer } from '../components/AvatarViewer';
 
 let cachedConversations: Conversation[] | null = null;
 let cachedActiveId: string | null = null;
@@ -322,7 +323,7 @@ function AudioPlayer({ msg, isDark }: { msg: Message; isDark: boolean }) {
           onChange={handleSliderChange}
           sx={{
             color: msg.fromMe
-              ? isDark ? '#00A884' : '#25D366'
+              ? '#1D4ED8'
               : '#00A884',
             height: 3,
             padding: '10px 0',
@@ -351,7 +352,7 @@ function AudioPlayer({ msg, isDark }: { msg: Message; isDark: boolean }) {
           <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary', fontWeight: 500 }}>
             {isPlaying ? formatSeconds(currentTime) : durationStr}
           </Typography>
-          <GraphicEqIcon sx={{ fontSize: 15, color: isPlaying ? '#25D366' : 'text.disabled', opacity: isPlaying ? 1 : 0.5 }} />
+          <GraphicEqIcon sx={{ fontSize: 15, color: isPlaying ? '#1D4ED8' : 'text.disabled', opacity: isPlaying ? 1 : 0.5 }} />
         </Box>
       </Box>
 
@@ -361,7 +362,7 @@ function AudioPlayer({ msg, isDark }: { msg: Message; isDark: boolean }) {
           sx={{
             width: 36,
             height: 36,
-            bgcolor: msg.fromMe ? '#25D366' : '#3B82F6',
+            bgcolor: msg.fromMe ? '#1D4ED8' : '#3B82F6',
             fontSize: '0.75rem',
             fontWeight: 700,
             color: '#fff',
@@ -377,12 +378,12 @@ function AudioPlayer({ msg, isDark }: { msg: Message; isDark: boolean }) {
             width: 16,
             height: 16,
             borderRadius: '50%',
-            bgcolor: '#25D366',
+            bgcolor: '#1D4ED8',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            border: `1.5px solid ${msg.fromMe ? (isDark ? '#005C4B' : '#DCF8C6') : (isDark ? '#1F2C34' : '#FFFFFF')}`,
+            border: `1.5px solid ${msg.fromMe ? (isDark ? '#1D4ED8' : '#DBEAFE') : (isDark ? '#1F2C34' : '#FFFFFF')}`,
           }}
         >
           <MicNoneIcon sx={{ fontSize: 10 }} />
@@ -400,22 +401,33 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
 
   const renderReplyPreview = () => {
     if (!msg.replyToId) return null;
+    
+    // WhatsApp style colors for the reply bubble
+    const barColor = msg.fromMe ? '#1D4ED8' : '#60A5FA'; 
+    const bgColor = selected 
+      ? isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.4)'
+      : msg.fromMe
+        ? isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)' // Inside my blue bubble
+        : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'; // Inside their bubble
+
     return (
       <Box sx={{ 
-        bgcolor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', 
-        borderLeft: `4px solid ${msg.fromMe ? '#0284c7' : '#25D366'}`, 
-        borderRadius: 1, 
-        p: 1, 
-        mb: 1, 
+        bgcolor: bgColor, 
+        borderLeft: `4px solid ${barColor}`, 
+        borderRadius: '8px', 
+        p: '6px 10px', 
+        mb: 0.75,
         display: 'flex', 
         flexDirection: 'column',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        transition: 'opacity 0.15s',
+        '&:hover': { opacity: 0.85 }
       }}>
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: msg.fromMe ? (isDark ? '#38bdf8' : '#0284c7') : '#25D366' }}>
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: msg.fromMe ? (isDark ? '#93C5FD' : '#1E3A8A') : barColor, mb: 0.25, lineHeight: 1.2 }}>
           {msg.fromMe ? 'Vous' : 'Contact'}
         </Typography>
-        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {msg.replyToText || 'Media'}
+        <Typography sx={{ fontSize: '0.8125rem', color: msg.fromMe ? (isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.65)') : 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
+          {msg.replyToText || 'Média'}
         </Typography>
       </Box>
     );
@@ -444,7 +456,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
             bgcolor: selected 
               ? isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)'
               : msg.fromMe
-              ? isDark ? '#005C4B' : '#DCF8C6'
+              ? isDark ? '#1D4ED8' : '#DBEAFE'
               : isDark ? '#1F2C34' : '#FFFFFF',
             boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)',
             fontStyle: 'italic',
@@ -483,7 +495,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
             bgcolor: selected 
               ? isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)'
               : msg.fromMe
-              ? isDark ? '#005C4B' : '#DCF8C6'
+              ? isDark ? '#1D4ED8' : '#DBEAFE'
               : isDark ? '#1F2C34' : '#FFFFFF',
             boxShadow: isDark
               ? '0 1px 2px rgba(0,0,0,0.4)'
@@ -526,7 +538,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
   if (msg.isImage) {
     return (
       <Box onClick={handleClick} onContextMenu={(e) => onContextMenu(e, msg.id)} sx={{ display: 'flex', justifyContent: msg.fromMe ? 'flex-end' : 'flex-start', mb: 0.5, px: 2 }}>
-        <Box className="animate-in" sx={{ position: 'relative', maxWidth: { xs: '80%', md: '60%' }, borderRadius: msg.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', bgcolor: selected ? (isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)') : (msg.fromMe ? (isDark ? '#005C4B' : '#DCF8C6') : (isDark ? '#1F2C34' : '#FFFFFF')), boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)', p: 0.5 }}>
+        <Box className="animate-in" sx={{ position: 'relative', maxWidth: { xs: '80%', md: '60%' }, borderRadius: msg.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', bgcolor: selected ? (isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)') : (msg.fromMe ? (isDark ? '#1D4ED8' : '#DBEAFE') : (isDark ? '#1F2C34' : '#FFFFFF')), boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)', p: 0.5 }}>
           {renderReplyPreview()}
           <Box sx={{ position: 'relative', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
             <img src={msg.imageUrl} alt="img" style={{ display: 'block', width: '100%', maxHeight: '350px', objectFit: 'cover' }} />
@@ -556,7 +568,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
   if (msg.isVideo) {
     return (
       <Box onClick={handleClick} onContextMenu={(e) => onContextMenu(e, msg.id)} sx={{ display: 'flex', justifyContent: msg.fromMe ? 'flex-end' : 'flex-start', mb: 0.5, px: 2 }}>
-        <Box className="animate-in" sx={{ position: 'relative', maxWidth: { xs: '80%', md: '60%' }, borderRadius: msg.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', bgcolor: selected ? (isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)') : (msg.fromMe ? (isDark ? '#005C4B' : '#DCF8C6') : (isDark ? '#1F2C34' : '#FFFFFF')), boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)', p: 0.5 }}>
+        <Box className="animate-in" sx={{ position: 'relative', maxWidth: { xs: '80%', md: '60%' }, borderRadius: msg.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', bgcolor: selected ? (isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)') : (msg.fromMe ? (isDark ? '#1D4ED8' : '#DBEAFE') : (isDark ? '#1F2C34' : '#FFFFFF')), boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)', p: 0.5 }}>
           {renderReplyPreview()}
           <Box sx={{ position: 'relative', width: '100%', borderRadius: '8px', overflow: 'hidden', bgcolor: '#000' }}>
             <video src={msg.videoUrl} controls controlsList="nodownload" style={{ display: 'block', width: '100%', maxHeight: '350px', objectFit: 'contain' }} />
@@ -586,7 +598,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
   if (msg.isContact) {
     return (
       <Box onClick={handleClick} onContextMenu={(e) => onContextMenu(e, msg.id)} sx={{ display: 'flex', justifyContent: msg.fromMe ? 'flex-end' : 'flex-start', mb: 0.5, px: 2 }}>
-        <Box className="animate-in" sx={{ position: 'relative', minWidth: 220, maxWidth: { xs: '80%', md: '60%' }, borderRadius: msg.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', bgcolor: selected ? (isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)') : (msg.fromMe ? (isDark ? '#005C4B' : '#DCF8C6') : (isDark ? '#1F2C34' : '#FFFFFF')), boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)', overflow: 'hidden', pt: 0.5, pb: 0.5 }}>
+        <Box className="animate-in" sx={{ position: 'relative', minWidth: 220, maxWidth: { xs: '80%', md: '60%' }, borderRadius: msg.fromMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px', bgcolor: selected ? (isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)') : (msg.fromMe ? (isDark ? '#1D4ED8' : '#DBEAFE') : (isDark ? '#1F2C34' : '#FFFFFF')), boxShadow: isDark ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 2px rgba(0,0,0,0.1)', overflow: 'hidden', pt: 0.5, pb: 0.5 }}>
           {msg.replyToId && <Box sx={{ px: 1, pt: 0.5 }}>{renderReplyPreview()}</Box>}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1 }}>
             <Avatar src={msg.contactPic} sx={{ width: 44, height: 44, bgcolor: '#A6A6A6' }}>
@@ -643,7 +655,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
             bgcolor: selected 
               ? isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)'
               : msg.fromMe
-              ? isDark ? '#005C4B' : '#DCF8C6'
+              ? isDark ? '#1D4ED8' : '#DBEAFE'
               : isDark ? '#1F2C34' : '#FFFFFF',
             boxShadow: isDark
               ? '0 1px 2px rgba(0,0,0,0.4)'
@@ -770,7 +782,7 @@ const Bubble = ({ msg, selected, onContextMenu, isDark, selectionMode, onToggle,
           bgcolor: selected 
             ? isDark ? 'rgba(37,211,102,0.2)' : 'rgba(37,211,102,0.1)'
             : msg.fromMe
-            ? isDark ? '#005C4B' : '#DCF8C6'
+            ? isDark ? '#1D4ED8' : '#DBEAFE'
             : isDark ? '#1F2C34' : '#FFFFFF',
           boxShadow: isDark
             ? '0 1px 2px rgba(0,0,0,0.4)'
@@ -835,13 +847,13 @@ function ConvoItem({ conv, active, onClick }: { conv: Conversation; active: bool
         py: 1.5,
         cursor: 'pointer',
         bgcolor: active
-          ? isDark ? alpha('#005C4B', 0.3) : alpha('#DCF8C6', 0.5)
+          ? isDark ? alpha('#1D4ED8', 0.3) : alpha('#DBEAFE', 0.5)
           : 'transparent',
         borderRight: active ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
         transition: 'background-color 120ms ease',
         '&:hover': {
           bgcolor: active
-            ? isDark ? alpha('#005C4B', 0.35) : alpha('#DCF8C6', 0.6)
+            ? isDark ? alpha('#1D4ED8', 0.35) : alpha('#DBEAFE', 0.6)
             : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
         },
       }}
@@ -849,6 +861,7 @@ function ConvoItem({ conv, active, onClick }: { conv: Conversation; active: bool
       {/* Avatar with online dot */}
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
         <Avatar
+          onClick={(e) => { e.stopPropagation(); }}
           sx={{
             width: 48,
             height: 48,
@@ -856,6 +869,7 @@ function ConvoItem({ conv, active, onClick }: { conv: Conversation; active: bool
             fontSize: '0.875rem',
             fontWeight: 700,
             borderRadius: '50%',
+            cursor: 'default',
           }}
         >
           {conv.photo}
@@ -964,6 +978,7 @@ const EMOJIS = [
 
 /* ─── Main component ────────────────────────────────────────────────────── */
 export default function MessagesPage() {
+  const { openViewer } = useAvatarViewer();
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const isDark = theme.palette.mode === 'dark';
@@ -1092,7 +1107,7 @@ export default function MessagesPage() {
 
           return {
             id: String(convo.id),
-            name: (otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
+            name: (otherParticipant ? `${otherParticipant.last_name || ''} ${otherParticipant.first_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
             role: ['admin', 'super_admin'].includes(otherParticipant?.role) ? 'Administrateur' : (otherParticipant?.employer_profile ? 'Employeur' : 'Candidat'),
             lastMsg: lastMessageText || 'Aucun message',
             time: lastMessageTime,
@@ -1216,7 +1231,7 @@ export default function MessagesPage() {
 
                 return {
                   id: String(convo.id),
-                  name: (otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
+                  name: (otherParticipant ? `${otherParticipant.last_name || ''} ${otherParticipant.first_name || ''}`.trim() || otherParticipant.username : 'StartJobs User') || 'Utilisateur',
                   role: ['admin', 'super_admin'].includes(otherParticipant?.role) ? 'Administrateur' : (otherParticipant?.employer_profile ? 'Employeur' : 'Candidat'),
                   lastMsg: lastMessageText || 'Aucun message',
                   time: lastMessageTime,
@@ -1423,7 +1438,7 @@ export default function MessagesPage() {
                 const convoUnreadCount = mappedMessages.filter((m: any) => !m.fromMe && m.status !== 'read').length;
                 newConvos.unshift({
                   id: String(convo.id),
-                  name: otherParticipant ? `${otherParticipant.first_name || ''} ${otherParticipant.last_name || ''}`.trim() || otherParticipant.username : 'StartJobs User',
+                  name: otherParticipant ? `${otherParticipant.last_name || ''} ${otherParticipant.first_name || ''}`.trim() || otherParticipant.username : 'StartJobs User',
                   role: ['admin', 'super_admin'].includes(otherParticipant?.role) ? 'Administrateur' : (otherParticipant?.employer_profile ? 'Employeur' : 'Candidat'),
                   lastMsg: mappedMessages.length > 0 ? mappedMessages[mappedMessages.length - 1].text : 'Aucun message',
                   time: mappedMessages.length > 0 ? mappedMessages[mappedMessages.length - 1].time : '12:00',
@@ -1844,7 +1859,7 @@ export default function MessagesPage() {
         if (!existingConvo) {
           const newConvoItem: Conversation = {
             id: newConvoId,
-            name: user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : user.username,
+            name: user.last_name || user.first_name ? `${user.last_name || ''} ${user.first_name || ''}`.trim() : user.username,
             role: ['admin', 'super_admin'].includes(user.role) ? 'Administrateur' : (user.role === 'employer' ? 'Employeur' : 'Candidat'),
             lastMsg: 'Nouvelle discussion',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1981,18 +1996,20 @@ export default function MessagesPage() {
                 Messages
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <IconButton 
-                  size="small"
-                  onClick={() => setNewChatModalOpen(true)}
-                  sx={{ 
-                    bgcolor: 'primary.main', 
-                    color: 'white', 
-                    '&:hover': { bgcolor: 'primary.dark' },
-                    borderRadius: '8px'
-                  }}
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
+                {!(currentRole === 'employer' && currentUser?.employer_profile?.kyc_status !== 'approved') && (
+                  <IconButton 
+                    size="small"
+                    onClick={() => setNewChatModalOpen(true)}
+                    sx={{ 
+                      bgcolor: 'primary.main', 
+                      color: 'white', 
+                      '&:hover': { bgcolor: 'primary.dark' },
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                )}
                 <IconButton size="small" className="pressable" sx={{ borderRadius: '8px' }}>
                   <MoreVertIcon sx={{ fontSize: 20 }} />
                 </IconButton>
@@ -2093,14 +2110,22 @@ export default function MessagesPage() {
                     <ArrowBackIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 )}
-                <Box sx={{ position: 'relative', cursor: 'pointer' }}>
+                <Box sx={{ position: 'relative' }}>
                   <Avatar
+                    onClick={() => {
+                      // open viewer with conversation photo — initials-only for now (no real photo URL in conv)
+                      const avatarColor = activeConv.color || '#1D4ED8';
+                      openViewer(null, activeConv.name, activeConv.photo, avatarColor);
+                    }}
                     sx={{
                       width: 40,
                       height: 40,
                       bgcolor: activeConv.color,
                       fontSize: '0.8125rem',
                       fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'transform 0.15s, box-shadow 0.15s',
+                      '&:hover': { transform: 'scale(1.08)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
                     }}
                   >
                     {activeConv.photo}
@@ -2442,39 +2467,91 @@ export default function MessagesPage() {
                   </ClickAwayListener>
                 )}
 
-                {/* Reply Preview Box */}
+                {/* ── WhatsApp-style Reply Preview ── */}
                 {replyToMessage && (
-                  <Box sx={{ 
-                    position: 'absolute', 
-                    top: -60, 
-                    left: 0, 
-                    right: 0, 
-                    height: 60, 
-                    bgcolor: isDark ? '#2A3942' : '#F0F2F5', 
-                    borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, 
-                    px: 2, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    zIndex: 10 
-                  }}>
-                    <Box sx={{ 
-                      flex: 1, 
-                      bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#fff', 
-                      borderRadius: 1, 
-                      borderLeft: `4px solid ${replyToMessage.fromMe ? '#0284c7' : '#25D366'}`, 
-                      p: 1, 
-                      display: 'flex', 
-                      flexDirection: 'column' 
-                    }}>
-                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: replyToMessage.fromMe ? '#0284c7' : '#25D366' }}>
-                        {replyToMessage.fromMe ? 'Vous' : 'Contact'}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {replyToMessage.text || 'Media'}
-                      </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      bgcolor: isDark ? '#202C33' : '#F0F2F5', // WhatsApp web match
+                      px: { xs: 1.5, sm: 2 },
+                      py: 1.5,
+                      animation: 'slideUp 0.15s ease-out',
+                      borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                    }}
+                  >
+                    {/* The reply box */}
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        bgcolor: isDark ? '#2A3942' : '#E9EDEF',
+                        borderRadius: '8px',
+                        borderLeft: `4px solid ${replyToMessage.fromMe ? '#1D4ED8' : '#60A5FA'}`,
+                        px: 1.5,
+                        py: 1,
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                          <Typography
+                            sx={{
+                              fontSize: '0.8125rem',
+                              fontWeight: 800,
+                              color: replyToMessage.fromMe ? (isDark ? '#93C5FD' : '#1D4ED8') : '#60A5FA',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {replyToMessage.fromMe ? 'Vous' : 'Contact'}
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontSize: '0.8125rem',
+                            color: 'text.secondary',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {replyToMessage.isImage ? '📷 Photo'
+                            : replyToMessage.isVideo ? '🎥 Vidéo'
+                            : replyToMessage.isAudio ? '🎤 Message vocal'
+                            : replyToMessage.isDocument ? `📄 ${replyToMessage.docName || 'Document'}`
+                            : replyToMessage.text || 'Message'}
+                        </Typography>
+                      </Box>
+                      {/* Thumbnail if media */}
+                      {(replyToMessage.isImage && replyToMessage.imageUrl) && (
+                        <Box
+                          component="img"
+                          src={replyToMessage.imageUrl}
+                          sx={{ width: 44, height: 44, borderRadius: '0 4px 4px 0', objectFit: 'cover', flexShrink: 0, position: 'absolute', right: 0, top: 0, bottom: 0 }}
+                        />
+                      )}
                     </Box>
-                    <IconButton onClick={() => setReplyToMessage(null)} size="small" sx={{ ml: 1 }}>
-                      <CloseIcon fontSize="small" />
+
+                    {/* Close button (WhatsApp places it on the right) */}
+                    <IconButton
+                      onClick={() => setReplyToMessage(null)}
+                      size="small"
+                      sx={{
+                        flexShrink: 0,
+                        color: 'text.secondary',
+                        width: 32,
+                        height: 32,
+                        '&:hover': {
+                          bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                          color: 'text.primary',
+                        },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 20 }} />
                     </IconButton>
                   </Box>
                 )}
@@ -2749,7 +2826,8 @@ export default function MessagesPage() {
         onClose={() => setContactSearchOpen(false)}
         onSelect={(user) => {
           if (!activeId) return;
-          const contactStr = `[CONTACT_SHARE: {"id":"${user.id}", "name":"${user.first_name || user.username}", "role":"${user.role}", "pic":"${user.profile_pic || ''}"}]`;
+          const contactName = [user.last_name, user.first_name].filter(Boolean).join(' ') || user.username;
+          const contactStr = `[CONTACT_SHARE: {"id":"${user.id}", "name":"${contactName}", "role":"${user.role}", "pic":"${user.profile_pic || ''}"}]`;
           
           const now = new Date();
           const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -2761,7 +2839,7 @@ export default function MessagesPage() {
             fromMe: true,
             status: 'sent',
             isContact: true,
-            contactName: user.first_name || user.username,
+            contactName: contactName,
             contactRole: user.role,
             contactPic: user.profile_pic,
             contactId: user.id

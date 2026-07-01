@@ -9,12 +9,26 @@ import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useAppDispatch, useAppSelector } from '../store';
 import { setQuartier } from '../store/slices/locationSlice';
-import QUARTIERS from '../mocks/quartiers';
 
 export default function LocationChip() {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const quartier = useAppSelector((s) => s.location.quartier);
+  const globalLocations = useAppSelector((s) => s.locationsGlobal.locations);
+  const { user } = useAppSelector((s) => s.auth);
+  
+  // Determine user city
+  const userCity = React.useMemo(() => {
+    if (user?.employer_profile?.city) return user.employer_profile.city;
+    return 'Douala'; // fallback
+  }, [user]);
+
+  // Derived list of dynamic quartiers
+  const dynamicQuartiers = React.useMemo(() => {
+    const list = globalLocations[userCity] || [];
+    return ['Tous les quartiers', ...list];
+  }, [globalLocations, userCity]);
+
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const isDark = theme.palette.mode === 'dark';
@@ -65,7 +79,7 @@ export default function LocationChip() {
                 Où cherchez-vous ?
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                <PlaceIcon sx={{ fontSize: 16 }} /> Douala, Cameroun
+                <PlaceIcon sx={{ fontSize: 16 }} /> {userCity}, Cameroun
               </Typography>
             </Box>
             <IconButton onClick={() => setOpen(false)} size="small" sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }}>
@@ -106,13 +120,13 @@ export default function LocationChip() {
         <Divider sx={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }} />
         
         <List sx={{ overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {QUARTIERS.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase())).map((q) => {
-            const isSelected = q === quartier;
+          {dynamicQuartiers.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase())).map((q) => {
+            const isSelected = (q === 'Tous les quartiers' && (!quartier || quartier === 'Tous les quartiers')) || q === quartier;
             return (
               <ListItem key={q} disablePadding>
                 <ListItemButton
                   selected={isSelected}
-                  onClick={() => { dispatch(setQuartier(q)); setOpen(false); }}
+                  onClick={() => { dispatch(setQuartier(q === 'Tous les quartiers' ? '' : q)); setOpen(false); }}
                   sx={{
                     borderRadius: '16px',
                     py: 1.5,
@@ -149,7 +163,7 @@ export default function LocationChip() {
             );
           })}
           
-          {QUARTIERS.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+          {dynamicQuartiers.filter(q => q.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
             <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.6 }}>
               <SearchIcon sx={{ fontSize: 40, mb: 1, color: 'text.secondary' }} />
               <Typography sx={{ fontWeight: 600, color: 'text.secondary' }}>Aucun quartier trouvé</Typography>

@@ -22,7 +22,6 @@ import { nextStep, prevStep, updateData, completeWizard, resetWizard } from '../
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { register, updateProfile } from '../store/slices/authSlice';
 import WizardStepper from '../components/WizardStepper';
-import { DOMAINES } from '../mocks/workers';
 
 const STEP_TITLES = [
   'Votre identité',
@@ -173,10 +172,10 @@ function Step1({ data, onChange, setPhotoFile, errors }: any) {
       </Grid>
 
       <Grid size={{ xs: 6 }}>
-        <TextField fullWidth label="Prénom *" value={data.prenom || ''} onChange={(e) => onChange({ prenom: e.target.value })} error={!!errors?.prenom} helperText={errors?.prenom} />
+        <TextField fullWidth label="Nom *" value={data.nom || ''} onChange={(e) => onChange({ nom: e.target.value })} error={!!errors?.nom} helperText={errors?.nom} />
       </Grid>
       <Grid size={{ xs: 6 }}>
-        <TextField fullWidth label="Nom *" value={data.nom || ''} onChange={(e) => onChange({ nom: e.target.value })} error={!!errors?.nom} helperText={errors?.nom} />
+        <TextField fullWidth label="Prénom *" value={data.prenom || ''} onChange={(e) => onChange({ prenom: e.target.value })} error={!!errors?.prenom} helperText={errors?.prenom} />
       </Grid>
       <Grid size={{ xs: 12 }}>
         <TextField fullWidth label="Nom d'utilisateur *" placeholder="ex: pseudo123" value={data.username || ''} onChange={(e) => onChange({ username: e.target.value })} error={!!errors?.username} helperText={errors?.username} />
@@ -273,7 +272,7 @@ function Step2({ data, onChange, errors }: any) {
         Sélectionnez jusqu'à 5 domaines
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        {DOMAINES.map((d) => (
+        {data.availableSkills?.map((d: string) => (
           <Chip
             key={d}
             label={d}
@@ -516,6 +515,8 @@ export default function WizardPage() {
   const dispatch = useAppDispatch();
   const { currentStep, totalSteps, data, completed } = useAppSelector((s) => s.wizard);
   const { allow_registrations, site_name, logo } = useAppSelector((s: any) => s.siteSettings);
+  const skills = useAppSelector((s) => s.taxonomy.skills);
+  const dynamicSkills = skills.length > 0 ? skills : ['Construction', 'Cuisine', 'Électricité', 'Ménage', 'Livraison', 'Coiffure', 'Plomberie', 'Secrétariat', 'Sécurité', 'Couture', 'Informatique', 'Enseignement', 'Peinture', 'Maintenance'];
   const [loading, setLoading] = React.useState(false);
   const [stepErrors, setStepErrors] = React.useState<Record<string, string>>({});
   const [emailVerificationSent, setEmailVerificationSent] = React.useState(false);
@@ -619,7 +620,7 @@ export default function WizardPage() {
 
   const steps = [
     <Step1 data={data} onChange={handleChange} setPhotoFile={setPhotoFile} errors={stepErrors} />,
-    <Step2 data={data} onChange={handleChange} errors={stepErrors} />,
+    <Step2 data={{...data, availableSkills: dynamicSkills}} onChange={handleChange} errors={stepErrors} />,
     <Step3 data={data} onChange={handleChange} errors={stepErrors} />,
     <Step4 data={data} onChange={handleChange} errors={stepErrors} />,
     <Step5 data={data} onChange={handleChange} errors={stepErrors} />,

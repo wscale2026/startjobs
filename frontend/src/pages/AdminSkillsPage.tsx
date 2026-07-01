@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, useTheme, Button, TextField, ListItem, ListItemText, IconButton, Chip, alpha, CircularProgress, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Paper, useTheme, Button, TextField, ListItem, ListItemText, IconButton, Chip, alpha, CircularProgress, Tabs, Tab, Skeleton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -7,7 +7,13 @@ import ExtensionIcon from '@mui/icons-material/Extension';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
-import api from '../utils/api';
+import useSWR from 'swr';
+import api, { fetcher } from '../utils/api';
+import Fab from '@mui/material/Fab';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 
 interface Sector { id: number; name: string; }
 interface Skill { id: number; name: string; }
@@ -16,11 +22,13 @@ export default function AdminSkillsPage() {
   const theme = useTheme();
   const dispatch = useAppDispatch();
 
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: sectorsData, error: sectorsError, mutate: mutateSectors, isLoading: loadingSectors } = useSWR('/sectors/', fetcher);
+  const { data: skillsData, error: skillsError, mutate: mutateSkills, isLoading: loadingSkills } = useSWR('/skills/', fetcher);
 
-  // Pour l'affichage Mobile en Onglets
+  const sectors = sectorsData || [];
+  const skills = skillsData || [];
+  const loading = loadingSectors || loadingSkills;
+
   const [mobileTab, setMobileTab] = useState(0);
 
   const [newSector, setNewSector] = useState('');
@@ -30,44 +38,33 @@ export default function AdminSkillsPage() {
   const [loadingAddSkill, setLoadingAddSkill] = useState(false);
   const [deletingSectorId, setDeletingSectorId] = useState<number | null>(null);
   const [deletingSkillId, setDeletingSkillId] = useState<number | null>(null);
+  
+  const [searchSector, setSearchSector] = useState('');
+  const [searchSkill, setSearchSkill] = useState('');
+  
+  const [mobileAddOpen, setMobileAddOpen] = useState(false);
 
-  useEffect(() => {
-    fetchSectors();
-    fetchSkills();
-  }, []);
-
-  const fetchSectors = async () => {
-    try {
-      const res = await api.get('/sectors/');
-      setSectors(res.data);
-    } catch {
-      dispatch(showSnackbar({ message: 'Erreur chargement secteurs', severity: 'error' }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSkills = async () => {
-    try {
-      const res = await api.get('/skills/');
-      setSkills(res.data);
-    } catch {
-      dispatch(showSnackbar({ message: 'Erreur chargement compétences', severity: 'error' }));
-    }
-  };
+  const filteredSectors = sectors.filter((s: Sector) => 
+    searchSector ? s.name.toLowerCase().includes(searchSector.toLowerCase()) : true
+  );
+  
+  const filteredSkills = skills.filter((s: Skill) => 
+    searchSkill ? s.name.toLowerCase().includes(searchSkill.toLowerCase()) : true
+  );
 
   const handleAddSector = async () => {
     if (!newSector.trim()) return;
     setLoadingAddSector(true);
     try {
       const res = await api.post('/sectors/', { name: newSector.trim() });
-      setSectors(prev => [...prev, res.data]);
+      mutateSectors([...sectors, res.data], false);
       setNewSector('');
       dispatch(showSnackbar({ message: 'Secteur ajouté avec succès', severity: 'success' }));
     } catch {
       dispatch(showSnackbar({ message: 'Erreur: Ce secteur existe peut-être déjà.', severity: 'error' }));
     } finally {
       setLoadingAddSector(false);
+      setMobileAddOpen(false);
     }
   };
 
@@ -75,7 +72,7 @@ export default function AdminSkillsPage() {
     setDeletingSectorId(sector.id);
     try {
       await api.delete(`/sectors/${sector.id}/`);
-      setSectors(prev => prev.filter(s => s.id !== sector.id));
+      mutateSectors(sectors.filter((s: Sector) => s.id !== sector.id), false);
       dispatch(showSnackbar({ message: 'Secteur supprimé', severity: 'info' }));
     } catch {
       dispatch(showSnackbar({ message: 'Erreur lors de la suppression', severity: 'error' }));
@@ -89,13 +86,14 @@ export default function AdminSkillsPage() {
     setLoadingAddSkill(true);
     try {
       const res = await api.post('/skills/', { name: newSkill.trim() });
-      setSkills(prev => [...prev, res.data]);
+      mutateSkills([...skills, res.data], false);
       setNewSkill('');
       dispatch(showSnackbar({ message: 'Compétence ajoutée', severity: 'success' }));
     } catch {
       dispatch(showSnackbar({ message: 'Erreur: Cette compétence existe peut-être déjà.', severity: 'error' }));
     } finally {
       setLoadingAddSkill(false);
+      setMobileAddOpen(false);
     }
   };
 
@@ -103,7 +101,7 @@ export default function AdminSkillsPage() {
     setDeletingSkillId(skill.id);
     try {
       await api.delete(`/skills/${skill.id}/`);
-      setSkills(prev => prev.filter(s => s.id !== skill.id));
+      mutateSkills(skills.filter((s: Skill) => s.id !== skill.id), false);
       dispatch(showSnackbar({ message: 'Compétence supprimée', severity: 'info' }));
     } catch {
       dispatch(showSnackbar({ message: 'Erreur lors de la suppression', severity: 'error' }));
@@ -112,13 +110,7 @@ export default function AdminSkillsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress size={60} thickness={4} sx={{ color: theme.palette.primary.main }} />
-      </Box>
-    );
-  }
+
 
   return (
     <Box sx={{ pb: 6, maxWidth: 1400, mx: 'auto' }}>
@@ -178,7 +170,7 @@ export default function AdminSkillsPage() {
           </Box>
 
           {/* Formulaire Secteurs */}
-          <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+          <Box sx={{ display: { xs: 'none', md: 'block' }, p: 3, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
             <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
               <TextField 
                 fullWidth 
@@ -209,46 +201,71 @@ export default function AdminSkillsPage() {
 
           {/* Liste Secteurs */}
           <Box sx={{ flex: 1, overflowY: 'auto', p: 2, bgcolor: alpha(theme.palette.background.default, 0.2) }}>
-            <AnimatePresence>
-              {sectors.map((sector) => (
-                <motion.div key={sector.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
-                  <ListItem
-                    sx={{ 
-                      borderRadius: '12px', 
-                      mb: 1, 
-                      bgcolor: 'background.paper',
-                      border: `1px solid ${theme.palette.divider}`,
-                      boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.02)}`,
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        borderColor: alpha(theme.palette.primary.main, 0.4),
-                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
-                        transform: 'translateY(-2px)'
-                      }
-                    }}
-                  >
-                    <ListItemText primary={sector.name} slotProps={{ primary: { sx: { fontWeight: 600, fontSize: '0.95rem' } } }} />
-                    <IconButton 
-                      edge="end" 
-                      onClick={() => handleDeleteSector(sector)} 
-                      disabled={deletingSectorId === sector.id}
-                      sx={{ 
-                        color: 'text.secondary', 
-                        transition: 'all 0.2s',
-                        '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.1) } 
-                      }}
-                    >
-                      {deletingSectorId === sector.id ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
-                    </IconButton>
-                  </ListItem>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            {sectors.length === 0 && (
-              <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <CategoryIcon sx={{ fontSize: 48, opacity: 0.2 }} />
-                <Typography sx={{ fontWeight: 600 }}>Aucun secteur d'activité n'est configuré.</Typography>
+            <Box sx={{ mb: 2 }}>
+              <TextField 
+                fullWidth 
+                size="small"
+                placeholder="Rechercher un secteur..." 
+                value={searchSector}
+                onChange={(e) => setSearchSector(e.target.value)}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: '10px',
+                    bgcolor: 'background.paper',
+                  } 
+                }} 
+              />
+            </Box>
+            {loadingSectors ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} variant="rounded" height={60} sx={{ borderRadius: '12px' }} />
+                ))}
               </Box>
+            ) : (
+              <>
+                <AnimatePresence>
+                  {filteredSectors.map((sector: Sector) => (
+                    <motion.div key={sector.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
+                      <ListItem
+                        sx={{ 
+                          borderRadius: '12px', 
+                          mb: 1, 
+                          bgcolor: 'background.paper',
+                          border: `1px solid ${theme.palette.divider}`,
+                          boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.02)}`,
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: alpha(theme.palette.primary.main, 0.4),
+                            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                      >
+                        <ListItemText primary={sector.name} slotProps={{ primary: { sx: { fontWeight: 600, fontSize: '0.95rem' } } }} />
+                        <IconButton 
+                          edge="end" 
+                          onClick={() => handleDeleteSector(sector)} 
+                          disabled={deletingSectorId === sector.id}
+                          sx={{ 
+                            color: 'text.secondary', 
+                            transition: 'all 0.2s',
+                            '&:hover': { color: 'error.main', bgcolor: alpha(theme.palette.error.main, 0.1) } 
+                          }}
+                        >
+                          {deletingSectorId === sector.id ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+                        </IconButton>
+                      </ListItem>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {filteredSectors.length === 0 && (
+                  <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <CategoryIcon sx={{ fontSize: 48, opacity: 0.2 }} />
+                    <Typography sx={{ fontWeight: 600 }}>Aucun secteur d'activité n'est configuré.</Typography>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Paper>
@@ -281,7 +298,7 @@ export default function AdminSkillsPage() {
           </Box>
 
           {/* Formulaire Compétences */}
-          <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+          <Box sx={{ display: { xs: 'none', md: 'block' }, p: 3, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
             <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
               <TextField 
                 fullWidth 
@@ -313,54 +330,118 @@ export default function AdminSkillsPage() {
 
           {/* Liste Compétences (Chips) */}
           <Box sx={{ flex: 1, overflowY: 'auto', p: 4, bgcolor: alpha(theme.palette.background.default, 0.2) }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-              <AnimatePresence>
-                {skills.map((skill) => (
-                  <motion.div key={skill.id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                    <Chip
-                      label={skill.name}
-                      onDelete={() => handleDeleteSkill(skill)}
-                      deleteIcon={deletingSkillId === skill.id ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
-                      sx={{ 
-                        fontWeight: 600, 
-                        fontSize: '0.9rem', 
-                        borderRadius: '10px', 
-                        py: 2.5,
-                        px: 0.5,
-                        bgcolor: 'background.paper', 
-                        color: 'text.primary', 
-                        border: `1px solid ${theme.palette.divider}`,
-                        boxShadow: `0 2px 6px ${alpha(theme.palette.common.black, 0.04)}`,
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          borderColor: theme.palette.secondary.main,
-                          boxShadow: `0 4px 12px ${alpha(theme.palette.secondary.main, 0.15)}`,
-                          transform: 'translateY(-2px)',
-                          '& .MuiChip-deleteIcon': {
-                            color: 'error.main'
-                          }
-                        },
-                        '& .MuiChip-deleteIcon': {
-                          color: 'text.secondary',
-                          fontSize: '1.2rem',
-                          transition: 'color 0.2s'
-                        }
-                      }}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+            <Box sx={{ mb: 3 }}>
+              <TextField 
+                fullWidth 
+                size="small"
+                placeholder="Rechercher une compétence..." 
+                value={searchSkill}
+                onChange={(e) => setSearchSkill(e.target.value)}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': { 
+                    borderRadius: '10px',
+                    bgcolor: 'background.paper',
+                  } 
+                }} 
+              />
             </Box>
-            {skills.length === 0 && (
-              <Box sx={{ p: 4, mt: 4, textAlign: 'center', color: 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <ExtensionIcon sx={{ fontSize: 48, opacity: 0.2 }} />
-                <Typography sx={{ fontWeight: 600 }}>Aucune compétence n'est enregistrée pour l'instant.</Typography>
+            {loadingSkills ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <Skeleton key={i} variant="rounded" width={100 + Math.random() * 50} height={40} sx={{ borderRadius: '10px' }} />
+                ))}
               </Box>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                  <AnimatePresence>
+                    {filteredSkills.map((skill: Skill) => (
+                      <motion.div key={skill.id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+                        <Chip
+                          label={skill.name}
+                          onDelete={() => handleDeleteSkill(skill)}
+                          deleteIcon={deletingSkillId === skill.id ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+                          sx={{ 
+                            fontWeight: 600, 
+                            fontSize: '0.9rem', 
+                            borderRadius: '10px', 
+                            py: 2.5,
+                            px: 0.5,
+                            bgcolor: 'background.paper', 
+                            color: 'text.primary', 
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: `0 2px 6px ${alpha(theme.palette.common.black, 0.04)}`,
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              borderColor: theme.palette.secondary.main,
+                              boxShadow: `0 4px 12px ${alpha(theme.palette.secondary.main, 0.15)}`,
+                              transform: 'translateY(-2px)',
+                              '& .MuiChip-deleteIcon': {
+                                color: 'error.main'
+                              }
+                            },
+                            '& .MuiChip-deleteIcon': {
+                              color: 'text.secondary',
+                              fontSize: '1.2rem',
+                              transition: 'color 0.2s'
+                            }
+                          }}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </Box>
+                {filteredSkills.length === 0 && (
+                  <Box sx={{ p: 4, mt: 4, textAlign: 'center', color: 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <ExtensionIcon sx={{ fontSize: 48, opacity: 0.2 }} />
+                    <Typography sx={{ fontWeight: 600 }}>Aucune compétence n'est enregistrée pour l'instant.</Typography>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Paper>
 
       </Box>
+
+      {/* FAB Mobile */}
+      <Fab 
+        color={mobileTab === 0 ? "primary" : "secondary"} 
+        sx={{ position: 'fixed', bottom: 80, right: 16, display: { xs: 'flex', md: 'none' }, zIndex: 1100 }}
+        onClick={() => setMobileAddOpen(true)}
+      >
+        <AddIcon />
+      </Fab>
+
+      {/* Mobile Add Dialog */}
+      <Dialog open={mobileAddOpen} onClose={() => setMobileAddOpen(false)} fullWidth maxWidth="xs" sx={{ '& .MuiDialog-paper': { borderRadius: '24px', m: 2 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          {mobileTab === 0 ? 'Ajouter un secteur' : 'Ajouter une compétence'}
+        </DialogTitle>
+        <DialogContent sx={{ pb: 1 }}>
+          <TextField 
+            autoFocus
+            fullWidth 
+            placeholder={mobileTab === 0 ? "Nom du secteur..." : "Nom de la compétence..."} 
+            value={mobileTab === 0 ? newSector : newSkill} 
+            onChange={(e) => mobileTab === 0 ? setNewSector(e.target.value) : setNewSkill(e.target.value)} 
+            onKeyPress={(e) => e.key === 'Enter' && (mobileTab === 0 ? handleAddSector() : handleAddSkill())} 
+            sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }} 
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setMobileAddOpen(false)} color="inherit" sx={{ fontWeight: 700 }}>Annuler</Button>
+          <Button 
+            variant="contained" 
+            color={mobileTab === 0 ? "primary" : "secondary"} 
+            onClick={mobileTab === 0 ? handleAddSector : handleAddSkill}
+            disabled={mobileTab === 0 ? loadingAddSector : loadingAddSkill}
+            sx={{ borderRadius: '10px', fontWeight: 700 }}
+          >
+            {(mobileTab === 0 ? loadingAddSector : loadingAddSkill) ? <CircularProgress size={20} color="inherit" /> : 'Ajouter'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

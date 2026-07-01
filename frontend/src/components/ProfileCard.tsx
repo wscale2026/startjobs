@@ -1,12 +1,13 @@
 import React from 'react';
 import { Box, Typography, Avatar, Chip, useTheme, alpha, Button } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
-import VerifiedIcon from '@mui/icons-material/Verified';
+import VerifiedBadge from './VerifiedBadge';
 import PlaceIcon from '@mui/icons-material/Place';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ChatIcon from '@mui/icons-material/Chat';
 import { useNavigate } from 'react-router-dom';
 import type { Worker } from '../mocks/workers';
+import { useAvatarViewer } from './AvatarViewer';
 
 interface ProfileCardProps { worker: Worker; }
 
@@ -14,6 +15,7 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const isDark = theme.palette.mode === 'dark';
+  const { openViewer } = useAvatarViewer();
 
   return (
     <Box
@@ -39,6 +41,10 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
           <Avatar
             src={worker.photo || undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+              openViewer(worker.photo, `${worker.nom} ${worker.prenom}`.trim(), `${(worker.nom || '')[0] || ''}${worker.prenom[0] || ''}`.toUpperCase(), worker.photoColor);
+            }}
             sx={{
               width: 44,
               height: 44,
@@ -47,9 +53,12 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
               fontWeight: 700,
               flexShrink: 0,
               borderRadius: '10px', // Shadcn: square avatars
+              cursor: 'pointer',
+              transition: 'transform 0.15s, box-shadow 0.15s',
+              '&:hover': { transform: 'scale(1.08)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' },
             }}
           >
-            {!worker.photo ? `${worker.prenom[0] || ''}${(worker.nom || '')[0] || ''}`.toUpperCase() : ''}
+            {!worker.photo ? `${(worker.nom || '')[0] || ''}${worker.prenom[0] || ''}`.toUpperCase() : ''}
           </Avatar>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -67,10 +76,10 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
                   flex: 1,
                 }}
               >
-                {worker.prenom} {worker.nom}
+                {worker.nom} {worker.prenom}
               </Typography>
               {worker.verified && (
-                <VerifiedIcon sx={{ fontSize: 14, color: 'secondary.main', flexShrink: 0 }} />
+                <VerifiedBadge size="medium" />
               )}
             </Box>
 
@@ -209,7 +218,7 @@ export default function ProfileCard({ worker }: ProfileCardProps) {
               localStorage.setItem(
                 'pending_application',
                 JSON.stringify({
-                  employerName: `${worker.prenom} ${worker.nom}`,
+                  employerName: `${worker.nom} ${worker.prenom}`,
                   jobTitle: 'Prise de contact employeur',
                   isEmployerContact: true,
                   candidateId: (worker as any).user?.id || (worker as any).user_id,

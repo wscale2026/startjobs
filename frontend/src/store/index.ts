@@ -25,11 +25,12 @@ import offersReducer from './slices/offersSlice';
 import applicationsReducer from './slices/applicationsSlice';
 import messagesReducer from './slices/messagesSlice';
 import siteSettingsReducer from './slices/siteSettingsSlice';
+import taxonomyReducer from './slices/taxonomySlice';
 
 const persistConfig = {
   key: 'startjobs-root',
   storage: customStorage,
-  whitelist: ['theme', 'auth', 'location', 'filters', 'locationsGlobal', 'siteSettings', 'offers', 'admin', 'messages', 'applications'],
+  whitelist: ['theme', 'auth', 'location', 'filters', 'locationsGlobal', 'siteSettings', 'offers', 'admin', 'messages', 'applications', 'taxonomy'],
 };
 
 const rootReducer = combineReducers({
@@ -45,6 +46,7 @@ const rootReducer = combineReducers({
   applications: applicationsReducer,
   messages: messagesReducer,
   siteSettings: siteSettingsReducer,
+  taxonomy: taxonomyReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

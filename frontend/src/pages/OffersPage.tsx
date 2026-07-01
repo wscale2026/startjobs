@@ -16,10 +16,10 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { useNavigate } from 'react-router-dom';
 import OfferCard from '../components/OfferCard';
 import AdCard from '../components/AdCard';
-import PageLoader from '../components/PageLoader';
-import { useAppSelector, useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { fetchOffers, deleteOffer } from '../store/slices/offersSlice';
+import CardSkeleton from '../components/CardSkeleton';
+import { useAppSelector, useAppDispatch } from '../store';
 import { setCoords } from '../store/slices/locationSlice';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -216,8 +216,16 @@ export default function OffersPage() {
   };
 
 
-  if (offersStatus === 'loading') {
-    return <PageLoader text="Recherche des offres disponibles..." />;
+  if (offersStatus === 'loading' && offers.length === 0) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}><CardSkeleton count={3} /></Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} sx={{ display: { xs: 'none', sm: 'block' } }}><CardSkeleton count={3} /></Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} sx={{ display: { xs: 'none', lg: 'block' } }}><CardSkeleton count={3} /></Grid>
+        </Grid>
+      </Box>
+    );
   }
 
   return (
@@ -399,32 +407,37 @@ export default function OffersPage() {
         </Paper>
       )}
 
-      {/* Tabs */}
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        sx={{
-          mb: 3,
-          '& .MuiTabs-indicator': { height: 2, borderRadius: '2px' },
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        <Tab
-          label={`Toutes (${all.length})`}
-          id="tab-all"
-          sx={{ fontWeight: 500, fontSize: '0.9375rem', pb: 1.5 }}
-        />
-        <Tab
-          label={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <LocalFireDepartmentIcon sx={{ fontSize: 14, color: 'error.main' }} />
-              <span>Urgentes ({urgent.length})</span>
-            </Box>
-          }
-          id="tab-urgent"
-          sx={{ fontWeight: 500, fontSize: '0.9375rem', pb: 1.5 }}
-        />
-      </Tabs>
+      {/* Tabs / Segmented Controls */}
+      <Box sx={{ p: 0.5, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : alpha(theme.palette.primary.main, 0.04), borderRadius: '12px', display: 'flex', mb: 3 }}>
+        <Button
+          fullWidth
+          onClick={() => setTab(0)}
+          sx={{
+            py: 1, borderRadius: '10px', textTransform: 'none', fontWeight: tab === 0 ? 700 : 500,
+            bgcolor: tab === 0 ? 'background.paper' : 'transparent',
+            color: tab === 0 ? 'text.primary' : 'text.secondary',
+            boxShadow: tab === 0 ? (theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.05)') : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          Toutes ({all.length})
+        </Button>
+        <Button
+          fullWidth
+          onClick={() => setTab(1)}
+          sx={{
+            py: 1, borderRadius: '10px', textTransform: 'none', fontWeight: tab === 1 ? 700 : 500,
+            bgcolor: tab === 1 ? 'background.paper' : 'transparent',
+            color: tab === 1 ? 'text.primary' : 'text.secondary',
+            boxShadow: tab === 1 ? (theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.05)') : 'none',
+            transition: 'all 0.2s ease',
+            display: 'flex', gap: 1
+          }}
+        >
+          <LocalFireDepartmentIcon sx={{ fontSize: 18, color: tab === 1 ? 'error.main' : 'inherit' }} />
+          Urgentes ({urgent.length})
+        </Button>
+      </Box>
 
       {/* Grid */}
       {displayed.length > 0 || (!isEmployer && ads.length > 0) ? (

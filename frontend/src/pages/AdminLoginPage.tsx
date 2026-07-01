@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, alpha, useTheme, InputAdornment, IconButton } from '@mui/material';
+import { Box, Typography, TextField, Button, alpha, useTheme, InputAdornment, IconButton, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -136,7 +136,12 @@ export default function AdminLoginPage() {
                 '&:hover': { transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}` }
               }}
             >
-              {loading ? 'Connexion...' : 'Accéder au Dashboard'}
+              {loading ? (
+                <>
+                  <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                  Connexion...
+                </>
+              ) : 'Accéder au Dashboard'}
             </Button>
           </Box>
         </form>

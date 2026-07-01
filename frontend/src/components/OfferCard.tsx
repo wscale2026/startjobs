@@ -6,7 +6,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import PlaceIcon from '@mui/icons-material/Place';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import VerifiedIcon from '@mui/icons-material/Verified';
+import VerifiedBadge from './VerifiedBadge';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useNavigate } from 'react-router-dom';
 import type { JobOffer } from '../mocks/offers';
@@ -108,7 +108,7 @@ export default function OfferCard({ offer, onEdit, onDelete }: OfferCardProps) {
                 {offer.employeur}
               </Typography>
               {offer.employeurVerifie && (
-                <VerifiedIcon sx={{ fontSize: 12, color: 'secondary.main', flexShrink: 0 }} />
+                <VerifiedBadge size="small" />
               )}
             </Box>
           </Box>

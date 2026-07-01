@@ -170,7 +170,7 @@ export default function AdminMailingPage() {
                       freeSolo
                       options={users}
                       loading={loadingUsers}
-                      getOptionLabel={(option: any) => typeof option === 'string' ? option : `${option.first_name || ''} ${option.last_name || ''}`.trim() || option.username || option.email}
+                      getOptionLabel={(option: any) => typeof option === 'string' ? option : `${option.last_name || ''} ${option.first_name || ''}`.trim() || option.username || option.email}
                       inputValue={searchUser}
                       onInputChange={(_, newInputValue) => {
                         setSearchUser(newInputValue);
@@ -190,7 +190,7 @@ export default function AdminMailingPage() {
                             {(option.first_name?.[0] || option.username?.[0] || '?').toUpperCase()}
                           </Avatar>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{`${option.first_name || ''} ${option.last_name || ''}`.trim() || option.username}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{`${option.last_name || ''} ${option.first_name || ''}`.trim() || option.username}</Typography>
                             <Typography variant="caption" color="text.secondary">{option.email}</Typography>
                           </Box>
                         </Box>
@@ -347,7 +347,7 @@ export default function AdminMailingPage() {
       </Grid>
 
       {/* Mobile Sticky Action Bar */}
-      <Box sx={{ display: { xs: 'block', md: 'none' }, position: 'fixed', bottom: 0, left: 0, right: 0, p: 2, bgcolor: alpha(theme.palette.background.paper, 0.9), backdropFilter: 'blur(10px)', borderTop: `1px solid ${theme.palette.divider}`, zIndex: 10 }}>
+      <Box sx={{ display: { xs: 'block', md: 'none' }, position: 'fixed', bottom: 65, left: 0, right: 0, p: 2, bgcolor: alpha(theme.palette.background.paper, 0.9), backdropFilter: 'blur(10px)', borderTop: `1px solid ${theme.palette.divider}`, zIndex: 10 }}>
         <Button 
           fullWidth
           variant="contained" 

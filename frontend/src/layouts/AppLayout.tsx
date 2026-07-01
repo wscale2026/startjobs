@@ -30,12 +30,12 @@ import { logout } from '../store/slices/authSlice';
 import { setQuartier } from '../store/slices/locationSlice';
 import { getFullMediaUrl } from '../utils/api';
 import { useThemeMode } from '../theme/ThemeContext';
-import QUARTIERS from '../mocks/quartiers';
 import LocationChip from '../components/LocationChip';
 import ThemeToggle from '../components/ThemeToggle';
 import FloatingChat from '../components/FloatingChat';
 import SnackbarProvider from '../components/SnackbarProvider';
 import { useMessagePolling } from '../hooks/useMessagePolling';
+import { AvatarViewerProvider } from '../components/AvatarViewer';
 
 interface NavItem {
   label: string;
@@ -110,13 +110,28 @@ const MIN_DRAWER_WIDTH = 88;
 
 export default function AppLayout() {
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
+  const quartier = useAppSelector((s) => s.location.quartier);
+  const globalLocations = useAppSelector((s) => s.locationsGlobal.locations);
+  const { user } = useAppSelector((s) => s.auth);
+  
+  // Determine user city
+  const userCity = React.useMemo(() => {
+    if (user?.employer_profile?.city) return user.employer_profile.city;
+    return 'Douala'; // fallback
+  }, [user]);
+
+  // Derived list of dynamic quartiers
+  const dynamicQuartiers = React.useMemo(() => {
+    const list = globalLocations[userCity] || [];
+    return ['Tous les quartiers', ...list];
+  }, [globalLocations, userCity]);
+
   const role = useAppSelector((state) => state.auth.role);
-  const quartier = useAppSelector((state) => state.location.quartier);
-  const user = useAppSelector((state) => state.auth.user);
   const unreadCount = useAppSelector((state) => state.messages?.unreadCount || 0);
   const { site_name, logo } = useAppSelector((state) => state.siteSettings);
 
@@ -145,7 +160,7 @@ export default function AppLayout() {
   if (isEmployer) {
     const isRestricted = suspendEmployerFeatures || (kycStatus !== 'approved');
     if (isRestricted) {
-      baseNavItems = baseNavItems.filter(item => !['/search', '/offers', '/messages'].includes(item.path));
+      baseNavItems = baseNavItems.filter(item => !['/search', '/offers'].includes(item.path));
     }
   }
 
@@ -154,7 +169,6 @@ export default function AppLayout() {
   );
 
   const activeTab = navItems.findIndex((item) => location.pathname.startsWith(item.path));
-  const isDark = theme.palette.mode === 'dark';
   const isFullBleed = location.pathname.startsWith('/messages');
 
   // Redirection for Admin users trying to access candidate profiles in AppLayout
@@ -165,6 +179,7 @@ export default function AppLayout() {
   }, [role, location.pathname, navigate]);
 
   return (
+    <AvatarViewerProvider>
     <Box sx={{ 
       display: 'flex', 
       minHeight: '100vh', 
@@ -621,7 +636,7 @@ export default function AppLayout() {
                 <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'text.primary' }}>
                   {isEmployer 
                     ? (user?.employer_profile?.company_name || user?.first_name || user?.username || 'Cabinet Nkeng')
-                    : (user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user?.username || 'Christian Kamga')}
+                    : (user?.first_name || user?.last_name ? `${user.last_name || ''} ${user.first_name || ''}`.trim() : user?.username || 'Christian Kamga')}
                 </Typography>
                 
                 <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', mb: 0.5 }}>
@@ -895,7 +910,7 @@ export default function AppLayout() {
                 Où cherchez-vous ?
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                <PlaceIcon sx={{ fontSize: 16 }} /> Douala, Cameroun
+                <PlaceIcon sx={{ fontSize: 16 }} /> {userCity}, Cameroun
               </Typography>
             </Box>
             <IconButton onClick={() => setLocationOpen(false)} size="small" sx={{ bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }}>
@@ -936,13 +951,13 @@ export default function AppLayout() {
         <Divider sx={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }} />
         
         <List sx={{ overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {QUARTIERS.filter(q => q.toLowerCase().includes(quartierSearch.toLowerCase())).map((q) => {
-            const isSelected = q === quartier;
+          {dynamicQuartiers.filter(q => q.toLowerCase().includes(quartierSearch.toLowerCase())).map((q) => {
+            const isSelected = (q === 'Tous les quartiers' && (!quartier || quartier === 'Tous les quartiers')) || q === quartier;
             return (
               <ListItem key={q} disablePadding>
                 <ListItemButton
                   selected={isSelected}
-                  onClick={() => { dispatch(setQuartier(q)); setLocationOpen(false); }}
+                  onClick={() => { dispatch(setQuartier(q === 'Tous les quartiers' ? '' : q)); setLocationOpen(false); }}
                   sx={{
                     borderRadius: '16px',
                     py: 1.5,
@@ -979,7 +994,7 @@ export default function AppLayout() {
             );
           })}
           
-          {QUARTIERS.filter(q => q.toLowerCase().includes(quartierSearch.toLowerCase())).length === 0 && (
+          {dynamicQuartiers.filter(q => q.toLowerCase().includes(quartierSearch.toLowerCase())).length === 0 && (
             <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.6 }}>
               <SearchIcon sx={{ fontSize: 40, mb: 1, color: 'text.secondary' }} />
               <Typography sx={{ fontWeight: 600, color: 'text.secondary' }}>Aucun quartier trouvé</Typography>
@@ -990,5 +1005,6 @@ export default function AppLayout() {
       </SwipeableDrawer>
       <SnackbarProvider />
     </Box>
+    </AvatarViewerProvider>
   );
 }

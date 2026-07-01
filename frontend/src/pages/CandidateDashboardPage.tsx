@@ -26,6 +26,7 @@ import { useAppSelector, useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { fetchApplications, updateApplicationStatus, deleteApplication } from '../store/slices/applicationsSlice';
 import { fetchOffers } from '../store/slices/offersSlice';
+import CardSkeleton from '../components/CardSkeleton';
 
 // Mock constants removed and made dynamic inside the component
 
@@ -438,14 +439,16 @@ export default function CandidateDashboardPage() {
           </Box>
 
           <Grid container spacing={2}>
-            {recommendedJobs.length === 0 && (
+            {offersStatus === 'loading' && recommendedJobs.length === 0 ? (
+              <Grid size={{ xs: 12 }}><CardSkeleton count={2} /></Grid>
+            ) : recommendedJobs.length === 0 ? (
               <Grid size={{ xs: 12 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
                   Aucune offre recommandée disponible pour le moment.
                 </Typography>
               </Grid>
-            )}
-            {recommendedJobs.map((job: any) => (
+            ) : (
+              recommendedJobs.map((job: any) => (
               <Grid size={{ xs: 12, sm: 6 }} key={job.id}>
                 <Box
                   className="pressable"
@@ -481,7 +484,8 @@ export default function CandidateDashboardPage() {
                   </Box>
                 </Box>
               </Grid>
-            ))}
+            ))
+            )}
           </Grid>
         </Box>
 
@@ -595,7 +599,9 @@ export default function CandidateDashboardPage() {
         </Stack>
 
         <Grid container spacing={3}>
-          {filteredCandidatures.length === 0 ? (
+          {appsStatus === 'loading' && filteredCandidatures.length === 0 ? (
+            <Grid size={{ xs: 12 }}><CardSkeleton count={2} /></Grid>
+          ) : filteredCandidatures.length === 0 ? (
             <Grid size={{ xs: 12 }}>
               <Paper sx={{ p: 4, textAlign: 'center', border: `1px dashed ${theme.palette.divider}`, bgcolor: 'transparent' }}>
                 <Typography color="text.secondary" sx={{ fontWeight: 500 }}>

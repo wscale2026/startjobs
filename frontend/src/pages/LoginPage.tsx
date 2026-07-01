@@ -202,7 +202,7 @@ export default function LoginPage() {
               boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.25)}`,
             }}
           >
-            {loading ? 'Connexion...' : 'Se connecter'}
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Se connecter'}
           </Button>
 
           {needsVerification && (

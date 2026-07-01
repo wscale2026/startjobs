@@ -8,7 +8,11 @@ import { useAppDispatch } from './store';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import { fetchPublicSettings } from './store/slices/siteSettingsSlice';
 import { fetchLocations } from './store/slices/locationsGlobalSlice';
+import { fetchTaxonomy } from './store/slices/taxonomySlice';
 import { useAppSelector } from './store';
+
+import { SWRConfig } from 'swr';
+import { localStorageProvider } from './utils/swrProvider';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
@@ -52,6 +56,7 @@ export default function App() {
   useEffect(() => {
     dispatch(fetchPublicSettings());
     dispatch(fetchLocations());
+    dispatch(fetchTaxonomy());
     if (localStorage.getItem('access_token')) {
       dispatch(fetchCurrentUser());
     }
@@ -93,56 +98,58 @@ export default function App() {
   }, [site_name, seo_description, seo_keywords, logo]);
 
   return (
-    <BrowserRouter>
-      <Suspense fallback={<Loader />}>
-        <Routes>
-          {/* Standalone landing (no app shell) */}
-          <Route path="/" element={<LandingPage />} />
+    <SWRConfig value={{ provider: localStorageProvider }}>
+      <BrowserRouter>
+        <Suspense fallback={<Loader />}>
+          <Routes>
+            {/* Standalone landing (no app shell) */}
+            <Route path="/" element={<LandingPage />} />
 
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
-            <Route path="/verify-email/:uid/:token" element={<VerifyEmailPage />} />
-            <Route path="/onboarding/jeune" element={<WizardPage />} />
-            <Route path="/onboarding/employeur" element={<EmployerOnboardingPage />} />
-            <Route path="/rate/:missionId" element={<RatingPage />} />
-          </Route>
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
+              <Route path="/verify-email/:uid/:token" element={<VerifyEmailPage />} />
+              <Route path="/onboarding/jeune" element={<WizardPage />} />
+              <Route path="/onboarding/employeur" element={<EmployerOnboardingPage />} />
+              <Route path="/rate/:missionId" element={<RatingPage />} />
+            </Route>
 
-          {/* Main app shell */}
-          <Route element={<AppLayout />}>
-            <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/search/:id" element={<ProfileDetailPage />} />
-            <Route path="/offers" element={<OffersPage />} />
-            <Route path="/offers/:id" element={<OfferDetailPage />} />
-            <Route path="/post-offer" element={<PostOfferPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/employer/dashboard" element={<EmployerDashboardPage />} />
-          </Route>
+            {/* Main app shell */}
+            <Route element={<AppLayout />}>
+              <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/search/:id" element={<ProfileDetailPage />} />
+              <Route path="/offers" element={<OffersPage />} />
+              <Route path="/offers/:id" element={<OfferDetailPage />} />
+              <Route path="/post-offer" element={<PostOfferPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/employer/dashboard" element={<EmployerDashboardPage />} />
+            </Route>
 
-          {/* Admin shell */}
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboardPage />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
-            <Route path="/admin/search/:id" element={<ProfileDetailPage />} />
-            <Route path="/admin/locations" element={<AdminLocationsPage />} />
-            <Route path="/admin/profile" element={<AdminProfilePage />} />
-            <Route path="/admin/offers" element={<AdminOffersPage />} />
-            <Route path="/admin/skills" element={<AdminSkillsPage />} />
-            <Route path="/admin/settings" element={<AdminSettingsPage />} />
-            <Route path="/admin/messages" element={<AdminMessagesPage />} />
-            <Route path="/admin/mailing" element={<AdminMailingPage />} />
-          </Route>
+            {/* Admin shell */}
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/search/:id" element={<ProfileDetailPage />} />
+              <Route path="/admin/locations" element={<AdminLocationsPage />} />
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
+              <Route path="/admin/offers" element={<AdminOffersPage />} />
+              <Route path="/admin/skills" element={<AdminSkillsPage />} />
+              <Route path="/admin/settings" element={<AdminSettingsPage />} />
+              <Route path="/admin/messages" element={<AdminMessagesPage />} />
+              <Route path="/admin/mailing" element={<AdminMailingPage />} />
+            </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+            {/* Fallback */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </SWRConfig>
   );
 }

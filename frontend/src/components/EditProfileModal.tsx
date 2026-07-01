@@ -31,12 +31,6 @@ interface EditProfileModalProps {
   initialData?: any;
 }
 
-const ALL_DOMAINES = [
-  'BTP & Construction', 'Vente & Commerce', 'Restauration',
-  'Marketing', 'IT & Tech', 'Design', 'Assistance Administrative',
-  'Plomberie', 'Électricité', 'Mécanique', 'Transport', 'Sécurité',
-  'Nettoyage', 'Coiffure & Beauté', 'Agriculture', 'Couture & Mode'
-];
 
 const ALL_LANGUAGES = ['Français', 'Anglais', 'Haoussa', 'Bamiléké', 'Ewondo', 'Bassa', 'Arabe', 'Fulfuldé', 'Allemand', 'Espagnol'];
 
@@ -55,6 +49,15 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isDark = theme.palette.mode === 'dark';
   const user = useAppSelector((state) => state.auth.user);
+  const skills = useAppSelector((state) => state.taxonomy.skills);
+  const sectors = useAppSelector((state) => state.taxonomy.sectors);
+  const LOCATIONS = useAppSelector(state => state.locationsGlobal.locations);
+
+  const dynamicSkills = skills.length > 0 ? skills : ['Construction', 'Cuisine', 'Électricité', 'Ménage', 'Livraison', 'Coiffure', 'Plomberie', 'Secrétariat', 'Sécurité', 'Couture', 'Informatique', 'Enseignement', 'Peinture', 'Maintenance'];
+  const dynamicSectors = sectors.length > 0 ? sectors : ['Informatique, Digital & TIC', 'Santé & Bien-être', 'Commerce & Vente', 'Transport & Logistique', 'BTP & Construction', 'Restauration & Hôtellerie', 'Éducation & Formation', 'Finance & Comptabilité', 'Art & Design', 'Autre'];
+  
+  const CITIES = Object.keys(LOCATIONS || {});
+  const dynamicCities = CITIES.length > 0 ? CITIES : VILLES_CAMEROUN;
 
   // Form State
   const [nom, setNom] = useState('');
@@ -86,6 +89,8 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
   // Image State
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const availableNeighborhoods = (LOCATIONS && ville && LOCATIONS[ville]) ? LOCATIONS[ville] : [];
 
   const [geolocating, setGeolocating] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -346,12 +351,12 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
                     </FormControl>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField label="Nom" value={nom} onChange={e => setNom(e.target.value)} fullWidth variant="outlined" />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField label="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} fullWidth variant="outlined"
                       slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonIcon fontSize="small" /></InputAdornment> } }}
                     />
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <TextField label="Nom" value={nom} onChange={e => setNom(e.target.value)} fullWidth variant="outlined" />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField label="Nom d'utilisateur" value={username} onChange={e => setUsername(e.target.value)} fullWidth variant="outlined" />
@@ -443,15 +448,21 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <Autocomplete
-                  options={VILLES_CAMEROUN}
+                  options={dynamicCities}
                   value={ville}
-                  onChange={(_, v) => setVille(v || '')}
+                  onChange={(_, v) => { setVille(v || ''); setQuartier(''); }} // Reset quartier when city changes
                   freeSolo
                   renderInput={params => <TextField {...params} label="Ville" variant="outlined" onChange={e => setVille(e.target.value)} />}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField label="Quartier" value={quartier} onChange={e => setQuartier(e.target.value)} fullWidth variant="outlined" placeholder="ex: Akwa, Bonanjo…" />
+                <Autocomplete
+                  options={availableNeighborhoods}
+                  value={quartier}
+                  onChange={(_, v) => setQuartier(v || '')}
+                  freeSolo
+                  renderInput={params => <TextField {...params} label="Quartier" variant="outlined" placeholder="ex: Akwa, Bonanjo…" onChange={e => setQuartier(e.target.value)} />}
+                />
               </Grid>
               <Grid size={{ xs: 12 }}>
                 <Button
@@ -491,7 +502,12 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
             {isEmployer ? (
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField label="Secteur d'activité" value={secteur} onChange={e => setSecteur(e.target.value)} fullWidth variant="outlined" />
+                  <Autocomplete
+                    options={dynamicSectors}
+                    value={secteur}
+                    onChange={(_, v) => setSecteur(v || '')}
+                    renderInput={params => <TextField {...params} label="Secteur d'activité" variant="outlined" />}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Autocomplete
@@ -513,7 +529,7 @@ export default function EditProfileModal({ open, onClose, isEmployer }: EditProf
               <>
                 <Autocomplete
                   multiple
-                  options={ALL_DOMAINES}
+                  options={dynamicSkills}
                   value={domaines}
                   onChange={(_: React.SyntheticEvent, v: string[]) => setDomaines(v)}
                   renderInput={(params) => (

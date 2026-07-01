@@ -11,7 +11,6 @@ import RotateLeftIcon from '@mui/icons-material/RotateLeft';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useAppDispatch, useAppSelector } from '../store';
 import { setDomaine, toggleDisponible, setRayon, setQuery, setTypeProfil, resetFilters } from '../store/slices/filtersSlice';
-import { DOMAINES } from '../mocks/workers';
 
 const RADIUS_OPTIONS: (1 | 3 | 5 | null)[] = [1, 3, 5, null];
 
@@ -74,6 +73,8 @@ export default function SearchBar() {
   const isDark = theme.palette.mode === 'dark';
   const dispatch = useAppDispatch();
   const filters = useAppSelector((s) => s.filters);
+  const skills = useAppSelector((s) => s.taxonomy.skills);
+  const dynamicSkills = skills.length > 0 ? skills : ['Construction', 'Cuisine', 'Électricité', 'Ménage', 'Livraison', 'Coiffure', 'Plomberie', 'Secrétariat', 'Sécurité', 'Couture', 'Informatique', 'Enseignement', 'Peinture', 'Maintenance'];
   const [expanded, setExpanded] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -188,7 +189,7 @@ export default function SearchBar() {
                     '&::-webkit-scrollbar': { width: '4px' },
                     '&::-webkit-scrollbar-thumb': { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', borderRadius: '4px' }
                   }}>
-                    {DOMAINES.map((d) => (
+                    {dynamicSkills.map((d) => (
                       <FilterChip
                         key={d}
                         label={d}

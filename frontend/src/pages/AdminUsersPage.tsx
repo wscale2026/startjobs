@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, useTheme, Button, TextField, InputAdornment, Tabs, Tab, Avatar, alpha, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Divider, Stack, TablePagination, MenuItem, Select, FormControl, InputLabel, FormHelperText, CircularProgress, Menu, Autocomplete, Alert } from '@mui/material';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, IconButton, useTheme, Button, TextField, InputAdornment, Tabs, Tab, Avatar, alpha, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Divider, Stack, TablePagination, MenuItem, Select, FormControl, InputLabel, FormHelperText, CircularProgress, Menu, Autocomplete, Alert, Card, CardContent, Badge } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -17,6 +17,7 @@ import MailIcon from '@mui/icons-material/Mail';
 import PhoneIcon from '@mui/icons-material/Phone';
 import WorkIcon from '@mui/icons-material/Work';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import VerifiedBadge from '../components/VerifiedBadge';
 import PlaceIcon from '@mui/icons-material/Place';
 import StarIcon from '@mui/icons-material/Star';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -26,11 +27,13 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import SchoolIcon from '@mui/icons-material/School';
-import { motion } from 'framer-motion';
+import AdminKycViewer from '../components/AdminKycViewer';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import api, { fetcher } from '../utils/api';
+import TableSkeleton from '../components/TableSkeleton';
 import useSWR from 'swr';
 
 // Utility: generate a random password
@@ -54,6 +57,10 @@ export default function AdminUsersPage() {
   const CITIES = Object.keys(LOCATIONS);
   const [tabIndex, setTabIndex] = useState(0);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [addAdminOpen, setAddAdminOpen] = useState(false);
   const [addCandidateOpen, setAddCandidateOpen] = useState(false);
@@ -63,7 +70,27 @@ export default function AdminUsersPage() {
   const [editAdminOpen, setEditAdminOpen] = useState(false);
   const [candidateFormLoading, setCandidateFormLoading] = useState(false);
   const [adminForm, setAdminForm] = useState({ nom: '', email: '', phone: '', password: '', role: 'moderator' });
-  const { data: rawUsers, error, mutate: fetchUsers } = useSWR('/users/', fetcher);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(0);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, debouncedSearch]);
+
+  const roleQuery = tabIndex === 0 ? 'candidate' : tabIndex === 1 ? 'employer' : 'admin';
+  const { data: usersData, error, mutate: fetchUsers, isLoading } = useSWR(
+    `/users/?page=${page + 1}&page_size=${rowsPerPage}&search=${debouncedSearch}&role=${roleQuery}`, 
+    fetcher,
+    { refreshInterval: 10000 } // Auto-refresh every 10 seconds for real-time updates
+  );
+
+  const rawUsers = usersData?.results || [];
+  const totalUsers = usersData?.count || 0;
+  const loading = isLoading;
 
   const allUsers = React.useMemo(() => {
     if (!rawUsers) return [];
@@ -76,14 +103,14 @@ export default function AdminUsersPage() {
 
       return {
         id: String(u.id),
-        nom: [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.username,
+        nom: [u.last_name, u.first_name].filter(Boolean).join(' ').trim() || u.username,
         prenom: u.first_name || '',
         nom_famille: u.last_name || '',
         role: u.role,
         email: u.email,
         phone: profile?.phone || '',
         statut: profile?.statut || (u.is_active ? 'Actif' : 'Inactif'),
-        online: false,
+        online: u.last_login ? (new Date().getTime() - new Date(u.last_login).getTime() < 15 * 60 * 1000) : false,
         date: new Date(u.date_joined).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
         rawDate: new Date(u.date_joined),
         avatar: u.username ? u.username[0].toUpperCase() : 'U',
@@ -102,6 +129,13 @@ export default function AdminUsersPage() {
         kycDocument: profile?.kyc_document || null,
         employerType: profile?.employer_type || 'particulier',
         kycRejectionReason: profile?.kyc_rejection_reason || '',
+        kycMethod: profile?.kyc_method || '',
+        kycSelfie: profile?.kyc_selfie || null,
+        kycCniRecto: profile?.kyc_cni_recto || null,
+        kycCniVerso: profile?.kyc_cni_verso || null,
+        kycPassportRecepisse: profile?.kyc_passport_recepisse || null,
+        kycAttestationFiscale: profile?.kyc_attestation_fiscale || null,
+        kycAttestationImmatriculation: profile?.kyc_attestation_immatriculation || null,
         // ── Candidate-specific fields ──────────────────
         bio: candidateProfile?.bio || '',
         photo: candidateProfile?.photo || null,
@@ -126,7 +160,7 @@ export default function AdminUsersPage() {
     return formatted;
   }, [rawUsers]);
 
-  const loading = !rawUsers && !error;
+
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuUser, setMenuUser] = useState<any>(null);
@@ -139,9 +173,6 @@ export default function AdminUsersPage() {
   
   // KYC Review State
   const [kycReviewUser, setKycReviewUser] = useState<any>(null);
-  const [kycRejectionReason, setKycRejectionReason] = useState('');
-  const [isKycUpdating, setIsKycUpdating] = useState(false);
-  const [kycUpdateAction, setKycUpdateAction] = useState<'approved' | 'rejected' | null>(null);
 
   // Candidate form state
   const [candForm, setCandForm] = useState({
@@ -184,7 +215,7 @@ export default function AdminUsersPage() {
 
       const newUser = {
         id: String(newUserId),
-        nom: `${candForm.prenom} ${candForm.nom}`,
+        nom: `${candForm.nom} ${candForm.prenom}`,
         role: 'candidate',
         email: candForm.email,
         phone: candForm.phone,
@@ -337,7 +368,11 @@ export default function AdminUsersPage() {
     
     // Optimistic UI Update: Retirer immédiatement l'utilisateur de l'affichage
     const prevUsers = rawUsers;
-    const optimisticData = rawUsers?.filter((u: any) => String(u.id) !== String(deleteTarget.id));
+    const optimisticData = { 
+      ...usersData, 
+      results: rawUsers?.filter((u: any) => String(u.id) !== String(deleteTarget.id)),
+      count: Math.max(0, (usersData?.count || 1) - 1)
+    };
     fetchUsers(optimisticData, { revalidate: false });
 
     try {
@@ -345,7 +380,7 @@ export default function AdminUsersPage() {
       dispatch(showSnackbar({ message: 'Utilisateur supprimé avec succès.', severity: 'success' }));
     } catch (err) {
       // Revenir à l'état précédent en cas d'erreur
-      fetchUsers(prevUsers, { revalidate: false });
+      fetchUsers({ ...usersData, results: prevUsers }, { revalidate: false });
       dispatch(showSnackbar({ message: 'Erreur lors de la suppression.', severity: 'error' }));
     } finally {
       setIsDeleting(false);
@@ -359,76 +394,66 @@ export default function AdminUsersPage() {
   const handleToggleBadge = async () => {
     if (!toggleBadgeUser) return;
     setIsTogglingBadge(true);
+    
+    const isVerified = toggleBadgeUser.statut === 'Vérifié';
+    const prevUsers = rawUsers;
+    
+    // Optimistic UI Update
+    const optimisticData = {
+      ...usersData,
+      results: rawUsers?.map((u: any) => {
+        if (String(u.id) === String(toggleBadgeUser.id)) {
+          return {
+            ...u,
+            employer_profile: {
+              ...u.employer_profile,
+              verified: !isVerified,
+              verification_requested: false
+            }
+          };
+        }
+        return u;
+      })
+    };
+    fetchUsers(optimisticData, { revalidate: false });
+
     try {
-      const isVerified = toggleBadgeUser.statut === 'Vérifié';
       await api.patch(`/admin/update-user/${toggleBadgeUser.id}/`, {
         profile: { verified: !isVerified, verification_requested: false }
       });
       dispatch(showSnackbar({ message: `Badge ${isVerified ? 'désactivé' : 'activé'} avec succès`, severity: 'success' }));
       setToggleBadgeUser(null);
-      fetchUsers();
     } catch (err) {
+      // Revenir à l'état précédent en cas d'erreur
+      fetchUsers({ ...usersData, results: prevUsers }, { revalidate: false });
       dispatch(showSnackbar({ message: 'Erreur lors de la modification du badge', severity: 'error' }));
     } finally {
       setIsTogglingBadge(false);
-    }
-  };
-
-  const handleKycUpdate = async (status: 'approved' | 'rejected') => {
-    if (!kycReviewUser) return;
-    if (status === 'rejected' && !kycRejectionReason.trim()) {
-      dispatch(showSnackbar({ message: 'Veuillez préciser le motif du rejet.', severity: 'warning' }));
-      return;
-    }
-    setIsKycUpdating(true);
-    setKycUpdateAction(status);
-    try {
-      await api.patch(`/admin/update-user/${kycReviewUser.id}/`, {
-        profile: {
-          kyc_status: status,
-          kyc_rejection_reason: status === 'rejected' ? kycRejectionReason : ''
-        }
-      });
-      dispatch(showSnackbar({ message: `Le profil a été ${status === 'approved' ? 'approuvé' : 'rejeté'}.`, severity: 'success' }));
-      setKycReviewUser(null);
       fetchUsers();
-    } catch (err: any) {
-      dispatch(showSnackbar({ message: 'Erreur lors de la mise à jour du KYC.', severity: 'error' }));
-    } finally {
-      setIsKycUpdating(false);
-      setKycUpdateAction(null);
     }
   };
 
-  // Pagination
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  // handleKycUpdate removed
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
     setPage(0);
   };
 
-  const getRoleFilter = () => {
-    if (tabIndex === 0) return ['candidate'];
-    if (tabIndex === 1) return ['employer'];
-    return ['admin', 'super_admin', 'moderator'];
-  };
-
   const isEmployerTab = tabIndex === 1;
   const isCandidateTab = tabIndex === 0;
 
-  const filteredUsers = allUsers.filter((u: any) => {
-    const roleMatch = getRoleFilter().includes(u.role);
-    const s = search.toLowerCase();
-    const nomStr = (u.nom || '').toLowerCase();
-    const emailStr = (u.email || '').toLowerCase();
-    const phoneStr = u.phone || '';
+  const paginatedUsers = allUsers;
 
-    return roleMatch && (nomStr.includes(s) || emailStr.includes(s) || phoneStr.includes(search));
-  });
-
-  const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  if (kycReviewUser) {
+    return (
+      <AdminKycViewer
+        user={kycReviewUser}
+        onClose={() => setKycReviewUser(null)}
+        onStatusUpdated={fetchUsers}
+      />
+    );
+  }
 
   return (
     <Box>
@@ -465,7 +490,18 @@ export default function AdminUsersPage() {
         </Box>
       </Box>
 
-      <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', gap: 3 }}>
+      <Box sx={{ 
+        position: { xs: 'sticky', md: 'static' }, 
+        top: { xs: 0, md: 'auto' }, 
+        bgcolor: 'background.default', 
+        zIndex: 10, 
+        pt: { xs: 2, md: 0 }, 
+        mb: 4, 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' }, 
+        justifyContent: 'space-between', 
+        gap: 3 
+      }}>
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
@@ -492,7 +528,11 @@ export default function AdminUsersPage() {
         />
       </Box>
 
-      <Paper sx={{ borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}`, overflow: 'hidden' }}>
+      {/* DESKTOP TABLE */}
+      <Paper sx={{ display: { xs: 'none', md: 'block' }, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}`, overflow: 'hidden' }}>
+        {loading ? (
+          <TableSkeleton columns={isCandidateTab ? 7 : isEmployerTab ? 8 : 6} rows={rowsPerPage} />
+        ) : (
         <TableContainer sx={{ overflowX: 'auto' }}>
           <Table>
             <TableHead sx={{ bgcolor: alpha(theme.palette.divider, 0.5) }}>
@@ -609,7 +649,7 @@ export default function AdminUsersPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredUsers.length === 0 && (
+              {paginatedUsers.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                     <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>Aucun utilisateur trouvé.</Typography>
@@ -619,17 +659,111 @@ export default function AdminUsersPage() {
             </TableBody>
           </Table>
         </TableContainer>
+        )}
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={filteredUsers.length}
-          rowsPerPage={rowsPerPage}
+          count={totalUsers}
           page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-          labelRowsPerPage="Utilisateurs par page:"
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          labelRowsPerPage="Lignes par page"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`}
         />
       </Paper>
+
+      {/* MOBILE CARDS */}
+      <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+        ) : paginatedUsers.length === 0 ? (
+          <Typography align="center" color="text.secondary" sx={{ py: 4 }}>Aucun utilisateur trouvé.</Typography>
+        ) : (
+          paginatedUsers.map((row: any) => (
+            <Card key={row.id} sx={{ borderRadius: 4, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', position: 'relative' }}>
+              <CardContent sx={{ p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Badge
+                    overlap="circular"
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    variant="dot"
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        backgroundColor: row.online ? '#44b700' : '#bdbdbd',
+                        color: row.online ? '#44b700' : '#bdbdbd',
+                        boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        '&::after': row.online ? {
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                          animation: 'ripple 1.2s infinite ease-in-out',
+                          border: '1px solid currentColor',
+                          content: '""',
+                        } : {},
+                      },
+                      '@keyframes ripple': {
+                        '0%': { transform: 'scale(.8)', opacity: 1 },
+                        '100%': { transform: 'scale(2.4)', opacity: 0 },
+                      },
+                    }}
+                  >
+                    <Avatar sx={{ width: 48, height: 48, bgcolor: theme.palette.primary.main, fontWeight: 700 }}>
+                      {row.avatar}
+                    </Avatar>
+                  </Badge>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: '1.1rem' }} noWrap>{row.nom}</Typography>
+                    <Typography variant="body2" color="text.secondary" noWrap>{row.email}</Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary' }}>{row.phone || 'Pas de numéro'}</Typography>
+                  </Box>
+                  <IconButton onClick={(e) => handleMenuOpen(e, row)} sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                    <MoreVertIcon color="primary" />
+                  </IconButton>
+                </Box>
+                
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {isEmployerTab && (
+                    <Chip 
+                      label={row.kycStatus === 'pending' ? 'KYC Attente' : row.kycStatus === 'approved' ? 'KYC Approuvé' : row.kycStatus === 'rejected' ? 'KYC Rejeté' : 'KYC Non soumis'} 
+                      size="small" 
+                      color={row.kycStatus === 'pending' ? 'warning' : row.kycStatus === 'approved' ? 'success' : row.kycStatus === 'rejected' ? 'error' : 'default'} 
+                      variant={row.kycStatus === 'pending' ? 'filled' : 'outlined'} 
+                      sx={{ fontWeight: 700, borderRadius: '8px' }} 
+                    />
+                  )}
+                  {isEmployerTab && row.verificationRequested && (
+                    <Chip size="small" label="Demande Badge" color="warning" variant="filled" sx={{ fontWeight: 700, borderRadius: '8px' }} />
+                  )}
+                  <Chip size="small" label={row.statut} color={row.statut === 'Actif' || row.statut === 'Vérifié' ? 'success' : 'default'} variant={row.statut === 'Actif' || row.statut === 'Vérifié' ? 'filled' : 'outlined'} sx={{ fontWeight: 700, borderRadius: '8px' }} />
+
+                </Box>
+              </CardContent>
+            </Card>
+          ))
+        )}
+        <TablePagination
+          component="div"
+          count={totalUsers}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          labelRowsPerPage=""
+          sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 2 }}
+        />
+      </Box>
 
       {/* Dialog Profil Utilisateur */}
       <Dialog
@@ -838,7 +972,7 @@ export default function AdminUsersPage() {
                     <Box sx={{ flex: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
                         <Typography variant="h5" sx={{ fontWeight: 800 }}>{selectedUser.companyName || selectedUser.nom}</Typography>
-                        {selectedUser.statut === 'Vérifié' && <VerifiedIcon sx={{ color: 'secondary.main', fontSize: 18 }} />}
+                        {selectedUser.statut === 'Vérifié' && <VerifiedBadge size="medium" />}
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <PlaceIcon sx={{ fontSize: 16 }} />
@@ -1806,8 +1940,8 @@ export default function AdminUsersPage() {
           </MenuItem>
         )}
         
-        {menuUser && menuUser.role === 'employer' && menuUser.kycStatus === 'pending' && (
-          <MenuItem onClick={() => { handleMenuClose(); setKycRejectionReason(''); setKycReviewUser(menuUser); }}>
+        {menuUser && menuUser.role === 'employer' && (
+          <MenuItem onClick={() => { handleMenuClose(); setKycReviewUser(menuUser); }}>
             <BadgeIcon fontSize="small" sx={{ mr: 1.5, color: 'info.main' }} />
             Examiner documents KYC
           </MenuItem>
@@ -1947,100 +2081,6 @@ export default function AdminUsersPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* ════════ Dialog Examiner KYC ════════ */}
-      <Dialog
-        open={Boolean(kycReviewUser)}
-        onClose={() => setKycReviewUser(null)}
-        maxWidth="sm"
-        fullWidth
-        sx={{ '& .MuiDialog-paper': { borderRadius: '24px', overflow: 'hidden' } }}
-      >
-        <Box sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-            <BadgeIcon sx={{ fontSize: 28 }} />
-          </Avatar>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800 }}>Examen KYC</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Vérification de l'identité de l'employeur
-            </Typography>
-          </Box>
-        </Box>
-        
-        <DialogContent sx={{ p: 3 }}>
-          {kycReviewUser && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <Box sx={{ p: 2.5, borderRadius: 3, bgcolor: 'background.default', border: `1px solid ${theme.palette.divider}` }}>
-                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700, mb: 0.5, textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.75rem' }}>Employeur / Entreprise</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 800, mb: 1, fontSize: '1.1rem' }}>{kycReviewUser.companyName || kycReviewUser.nom}</Typography>
-                
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>Type de document attendu :</Typography>
-                  <Chip label={kycReviewUser.employerType === 'entreprise' ? 'RCCM / NUI (Entreprise)' : 'CNI / Passeport (Particulier)'} size="small" color="info" variant="outlined" sx={{ fontWeight: 700 }} />
-                </Box>
-              </Box>
-
-              {kycReviewUser.kycDocument ? (
-                <Button 
-                  variant="outlined" 
-                  color="primary"
-                  href={kycReviewUser.kycDocument} 
-                  target="_blank" 
-                  startIcon={<VisibilityIcon />}
-                  sx={{ py: 1.5, borderRadius: 2, fontWeight: 700, borderStyle: 'dashed', borderWidth: 2, '&:hover': { borderWidth: 2 } }}
-                >
-                  Consulter le document fourni
-                </Button>
-              ) : (
-                <Alert severity="warning" sx={{ borderRadius: 2 }}>Aucun document n'a été fourni par cet utilisateur.</Alert>
-              )}
-
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>Motif du rejet</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>À remplir obligatoirement si vous souhaitez rejeter la demande.</Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  placeholder="Ex: Le document est flou ou illisible, veuillez renvoyer une version claire..."
-                  value={kycRejectionReason}
-                  onChange={(e) => setKycRejectionReason(e.target.value)}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                />
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 3, pt: 1, display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: 'space-between', gap: 2 }}>
-          <Button onClick={() => setKycReviewUser(null)} variant="text" color="inherit" sx={{ fontWeight: 700, width: { xs: '100%', sm: 'auto' } }} disabled={isKycUpdating}>
-            Fermer
-          </Button>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: { xs: '100%', sm: 'auto' } }}>
-            <Button
-              onClick={() => handleKycUpdate('rejected')}
-              variant="contained"
-              color="error"
-              disabled={isKycUpdating || !kycRejectionReason.trim()}
-              sx={{ borderRadius: '10px', fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}
-              startIcon={isKycUpdating && kycUpdateAction === 'rejected' ? <CircularProgress size={20} color="inherit" /> : null}
-            >
-              {isKycUpdating && kycUpdateAction === 'rejected' ? 'Rejet...' : 'Rejeter la demande'}
-            </Button>
-            <Button
-              onClick={() => handleKycUpdate('approved')}
-              variant="contained"
-              color="success"
-              disabled={isKycUpdating}
-              startIcon={isKycUpdating ? <CircularProgress size={20} color="inherit" /> : <CheckCircleIcon />}
-              sx={{ borderRadius: '10px', fontWeight: 700 }}
-            >
-              Approuver
-            </Button>
-          </Box>
-        </DialogActions>
-      </Dialog>
-
     </Box>
   );
 }

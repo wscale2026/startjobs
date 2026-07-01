@@ -24,7 +24,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import api from '../utils/api';
 
-let cachedContacts: any[] | null = null;
+// No longer caching all contacts to improve scale and performance
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -48,52 +48,41 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isDark = theme.palette.mode === 'dark';
   const [search, setSearch] = useState('');
-  const [users, setUsers] = useState<any[]>(cachedContacts || []);
-  const [loading, setLoading] = useState(!cachedContacts);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
+  // Focus cleanup on close
   useEffect(() => {
-    if (!open) return;
-    
-    const fetchBase = async () => {
-      try {
-        if (!cachedContacts) setLoading(true);
-        const res = await api.get('search-contacts/');
-        const data = res.data.results ? res.data.results : res.data;
-        cachedContacts = data;
-        if (!search.trim()) setUsers(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!cachedContacts) {
-      fetchBase();
-    } else if (!search.trim()) {
-      setUsers(cachedContacts);
-      fetchBase(); // Refresh cache silently
+    if (!open) {
+      setSearch('');
+      setUsers([]);
+      setLoading(false);
     }
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    if (!search.trim()) {
-      if (cachedContacts) setUsers(cachedContacts);
+    
+    // Require at least 2 characters to search to avoid fetching massive amounts of users
+    if (search.trim().length < 2) {
+      setUsers([]);
+      setLoading(false);
       return;
     }
     
+    setLoading(true);
     const delay = setTimeout(async () => {
       try {
-        // We do NOT set loading=true here to keep the current results visible while refining!
         const res = await api.get(`search-contacts/?search=${encodeURIComponent(search)}`);
         const data = res.data.results ? res.data.results : res.data;
         setUsers(data);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
-    }, 300);
+    }, 400); // 400ms debounce
     return () => clearTimeout(delay);
   }, [search, open]);
 
@@ -103,7 +92,7 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
     if (activeTab === 1 && u.role !== 'employer') return false;
     if (activeTab === 2 && u.role !== 'admin' && u.role !== 'super_admin' && !u.is_superuser) return false;
     
-    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase();
+    const fullName = `${u.last_name || ''} ${u.first_name || ''}`.toLowerCase();
     const username = (u.username || '').toLowerCase();
     const query = search.toLowerCase();
     return fullName.includes(query) || username.includes(query);
@@ -176,6 +165,12 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress size={32} />
           </Box>
+        ) : search.trim().length < 2 ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4, opacity: 0.6 }}>
+            <SearchIcon sx={{ fontSize: 64, mb: 1, color: 'text.disabled' }} />
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>Rechercher un utilisateur</Typography>
+            <Typography variant="body2" sx={{ textAlign: 'center' }}>Tapez au moins 2 caractères pour lancer la recherche.</Typography>
+          </Box>
         ) : filteredUsers.length === 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4, opacity: 0.6 }}>
             <PersonIcon sx={{ fontSize: 64, mb: 1, color: 'text.disabled' }} />
@@ -207,7 +202,7 @@ export default function ContactSearchModal({ open, onClose, onSelect, title = "E
                 <ListItemText
                   primary={
                     <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {user.first_name || user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+                      {user.first_name || user.last_name ? `${user.last_name} ${user.first_name}` : user.username}
                     </Typography>
                   }
                   secondary={

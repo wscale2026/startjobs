@@ -15,46 +15,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { register } from '../store/slices/authSlice';
 
-const QUESTIONS = [
-  {
-    id: 'identity',
-    question: 'Vos informations de connexion',
-    type: 'identity_form',
-  },
-  {
-    id: 'secteur',
-    question: 'Quel est votre secteur d\'activité ?',
-    placeholder: '',
-    type: 'chips',
-    options: ['Restauration', 'Commerce', 'Construction', 'Services à domicile', 'Événementiel', 'Transport', 'Éducation', 'Autre'],
-  },
-  {
-    id: 'ville',
-    question: 'Dans quelle ville êtes-vous situé(e) ?',
-    placeholder: 'ex: Douala, Yaoundé…',
-    type: 'autocomplete_city',
-  },
-  {
-    id: 'quartier',
-    question: 'Dans quel quartier êtes-vous situé(e) ?',
-    placeholder: 'ex: Akwa, Bonanjo, New Bell…',
-    type: 'autocomplete_neighborhood',
-  },
-  {
-    id: 'recrutements',
-    question: 'Combien de personnes comptez-vous recruter par mois ?',
-    placeholder: '',
-    type: 'chips',
-    options: ['1-2', '3-5', '6-10', '10+'],
-  },
-  {
-    id: 'verified',
-    question: 'Voulez-vous le badge "Employeur Vérifié" ?',
-    placeholder: '',
-    type: 'boolean',
-    description: 'Les employeurs vérifiés reçoivent 3× plus de réponses. Requiert un document officiel.',
-  },
-];
+
 
 const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s\-\.\&]+$/;
 const PHONE_REGEX = /^(?:\+237\s?)?(6[256789]\d{7}|2[234]\d{7})$/;
@@ -68,8 +29,59 @@ export default function EmployerOnboardingPage() {
   const LOCATIONS = useAppSelector(state => state.locationsGlobal.locations);
   const CITIES = Object.keys(LOCATIONS);
   const { allow_registrations, site_name, logo } = useAppSelector((state: any) => state.siteSettings);
+  const sectors = useAppSelector((state) => state.taxonomy.sectors);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+
+  const dynamicSectors = sectors.length > 0 ? [...sectors, 'Autre'] : ['Restauration', 'Commerce', 'Construction', 'Services à domicile', 'Événementiel', 'Transport', 'Éducation', 'Autre'];
+
+  const QUESTIONS = [
+    {
+      id: 'employer_type',
+      question: 'Êtes-vous un Particulier ou une Entreprise ?',
+      placeholder: '',
+      type: 'chips',
+      options: ['Particulier', 'Entreprise'],
+    },
+    {
+      id: 'identity',
+      question: 'Vos informations de connexion',
+      type: 'identity_form',
+    },
+    {
+      id: 'secteur',
+      question: 'Quel est votre secteur d\'activité ?',
+      placeholder: '',
+      type: 'chips',
+      options: dynamicSectors,
+    },
+    {
+      id: 'ville',
+      question: 'Dans quelle ville êtes-vous situé(e) ?',
+      placeholder: 'ex: Douala, Yaoundé…',
+      type: 'autocomplete_city',
+    },
+    {
+      id: 'quartier',
+      question: 'Dans quel quartier êtes-vous situé(e) ?',
+      placeholder: 'ex: Akwa, Bonanjo, New Bell…',
+      type: 'autocomplete_neighborhood',
+    },
+    {
+      id: 'recrutements',
+      question: 'Combien de personnes comptez-vous recruter par mois ?',
+      placeholder: '',
+      type: 'chips',
+      options: ['1-2', '3-5', '6-10', '10+'],
+    },
+    {
+      id: 'verified',
+      question: 'Voulez-vous le badge "Employeur Vérifié" ?',
+      placeholder: '',
+      type: 'boolean',
+      description: 'Les employeurs vérifiés reçoivent 3× plus de réponses. Requiert un document officiel.',
+    },
+  ];
   const [geolocating, setGeolocating] = useState(false);
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -114,9 +126,16 @@ export default function EmployerOnboardingPage() {
 
   const handleNext = () => {
     if (step === 0) {
+      if (!answers['employer_type']) {
+        dispatch(showSnackbar({ message: 'Veuillez sélectionner un type de compte.', severity: 'warning' }));
+        return;
+      }
+    }
+    
+    if (step === 1) { // step 1 is now 'identity' since step 0 is 'employer_type'
       const errs: Record<string, string> = {};
-      if (!answers['nom']?.trim()) errs['nom'] = "Le nom de l'entreprise est requis.";
-      else if (!NAME_REGEX.test(answers['nom'].trim())) errs['nom'] = "Le nom de l'entreprise contient des caractères invalides.";
+      if (!answers['nom']?.trim()) errs['nom'] = answers['employer_type'] === 'Entreprise' ? "Le nom de l'entreprise est requis." : "Votre nom est requis.";
+      else if (!NAME_REGEX.test(answers['nom'].trim())) errs['nom'] = "Le nom contient des caractères invalides.";
       
       if (!answers['username']?.trim()) errs['username'] = "Le nom d'utilisateur est requis.";
       else if (!USERNAME_REGEX.test(answers['username'])) errs['username'] = "Le nom d'utilisateur ne doit pas contenir d'espace.";
@@ -141,6 +160,7 @@ export default function EmployerOnboardingPage() {
       setLoading(true);
       
       const profileData = {
+        employer_type: answers['employer_type'] === 'Entreprise' ? 'entreprise' : 'particulier',
         company_name: answers['nom'],
         phone: answers['phone'] || '',
         industry: answers['secteur'] === 'Autre' ? answers['secteur_autre'] : answers['secteur'],
@@ -340,7 +360,7 @@ export default function EmployerOnboardingPage() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
               <TextField
                 fullWidth
-                label="Nom de l'entreprise ou responsable *"
+                label={answers['employer_type'] === 'Entreprise' ? "Nom de l'entreprise ou responsable *" : "Votre nom complet *"}
                 variant="outlined"
                 value={answers['nom'] || ''}
                 onChange={(e) => handleAnswer('nom', e.target.value)}

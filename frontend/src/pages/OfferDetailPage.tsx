@@ -10,7 +10,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import VerifiedIcon from '@mui/icons-material/Verified';
+import VerifiedBadge from '../components/VerifiedBadge';
 import ChatIcon from '@mui/icons-material/Chat';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_OFFERS } from '../mocks/offers';
@@ -177,13 +177,7 @@ export default function OfferDetailPage() {
                       {offer.employeur}
                     </Typography>
                     {offer.employeurVerifie && (
-                      <Chip
-                        icon={<VerifiedIcon sx={{ fontSize: '13px !important' }} />}
-                        label="Vérifié"
-                        size="small"
-                        color="secondary"
-                        sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, color: 'white' }}
-                      />
+                      <VerifiedBadge size="medium" />
                     )}
                   </Box>
                 </Box>

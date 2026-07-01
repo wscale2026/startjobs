@@ -23,14 +23,18 @@ import PlaceIcon from '@mui/icons-material/Place';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
-import api from '../utils/api';
+import api, { fetcher } from '../utils/api';
+import useSWR from 'swr';
 import AdCard from '../components/AdCard';
+import TableSkeleton from '../components/TableSkeleton';
 
 export default function AdminOffersPage() {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [offers, setOffers] = useState<any[]>([]);
+  const [totalOffers, setTotalOffers] = useState(0);
   
   // Tabs
   const [tabIndex, setTabIndex] = useState(0);
@@ -61,30 +65,27 @@ export default function AdminOffersPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const fetchOffers = () => {
-    api.get('offers/')
-      .then(res => {
-        setOffers(res.data);
-      })
-      .catch(err => console.error(err));
-  };
-
   useEffect(() => {
-    fetchOffers();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(0);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, debouncedSearch]);
 
-  // Filtering
-  const jobOffers = offers.filter(o => !o.is_ad);
-  const ads = offers.filter(o => o.is_ad);
+  const isAdQuery = tabIndex === 1 ? 'true' : 'false';
+  const { data: offersData, error, mutate: fetchOffers } = useSWR(
+    `offers/?page=${page + 1}&page_size=${rowsPerPage}&search=${debouncedSearch}&is_ad=${isAdQuery}`, 
+    fetcher,
+    { refreshInterval: 10000 }
+  );
 
-  const currentList = tabIndex === 0 ? jobOffers : ads;
-  const filteredList = currentList.filter(o => {
-    const titleMatch = o.title?.toLowerCase().includes(search.toLowerCase());
-    const empMatch = o.employer?.company_name?.toLowerCase().includes(search.toLowerCase());
-    return titleMatch || empMatch;
-  });
-
-  const paginatedList = filteredList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const paginatedList = offersData?.results || [];
+  const totalOffersCount = offersData?.count || 0;
+  
+  const loading = !offersData && !error;
 
   const handleOpenDelete = (id: string, titre: string, is_ad: boolean) => {
     setOfferToDelete({ id, titre, is_ad });
@@ -94,9 +95,18 @@ export default function AdminOffersPage() {
   const confirmDelete = () => {
     if (!offerToDelete) return;
     setIsDeleting(true);
+    
+    // Optimistic UI Update
+    const prevData = offersData;
+    const optimisticData = {
+      ...offersData,
+      results: offersData?.results?.filter((o: any) => String(o.id) !== String(offerToDelete.id)),
+      count: Math.max(0, (offersData?.count || 1) - 1)
+    };
+    fetchOffers(optimisticData, { revalidate: false });
+
     api.delete(`offers/${offerToDelete.id}/`)
       .then(() => {
-        setOffers(offers.filter(o => String(o.id) !== String(offerToDelete.id)));
         dispatch(showSnackbar({ 
           message: `${offerToDelete.is_ad ? 'Publicité' : 'Offre'} supprimée avec succès.`, 
           severity: 'success' 
@@ -106,9 +116,13 @@ export default function AdminOffersPage() {
         setPreviewAd(null);
       })
       .catch(err => {
+        fetchOffers(prevData, { revalidate: false });
         dispatch(showSnackbar({ message: 'Erreur lors de la suppression', severity: 'error' }));
       })
-      .finally(() => setIsDeleting(false));
+      .finally(() => {
+        setIsDeleting(false);
+        fetchOffers();
+      });
   };
 
   const handleOpenCreateAd = () => {
@@ -156,7 +170,18 @@ export default function AdminOffersPage() {
 
   return (
     <Box sx={{ pb: 6 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ 
+        position: { xs: 'sticky', md: 'static' }, 
+        top: { xs: 0, md: 'auto' }, 
+        bgcolor: 'background.default', 
+        zIndex: 10, 
+        pt: { xs: 2, md: 0 }, 
+        mb: 4, 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' }, 
+        justifyContent: 'space-between', 
+        gap: 2 
+      }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.5 }}>
             Offres d'emploi & Publicités
@@ -192,13 +217,17 @@ export default function AdminOffersPage() {
         onChange={(_, v) => { setTabIndex(v); setPage(0); }} 
         sx={{ mb: 3, '& .MuiTabs-indicator': { height: 3, borderRadius: '3px 3px 0 0' } }}
       >
-        <Tab label={`Offres d'emploi (${jobOffers.length})`} sx={{ fontWeight: 700, textTransform: 'none', fontSize: '1rem' }} />
-        <Tab label={`Publicités (${ads.length})`} sx={{ fontWeight: 700, textTransform: 'none', fontSize: '1rem' }} />
+        <Tab label="Offres d'emploi" sx={{ fontWeight: 700, textTransform: 'none', fontSize: '1rem' }} />
+        <Tab label="Publicités" sx={{ fontWeight: 700, textTransform: 'none', fontSize: '1rem' }} />
       </Tabs>
 
-      <Paper sx={{ borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}`, overflow: 'hidden' }}>
+      {/* DESKTOP TABLE */}
+      <Paper sx={{ display: { xs: 'none', md: 'block' }, borderRadius: '24px', border: `1px solid ${theme.palette.divider}`, boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.05)}`, overflow: 'hidden' }}>
+        {loading ? (
+          <TableSkeleton columns={5} rows={rowsPerPage} />
+        ) : (
         <TableContainer sx={{ overflowX: 'auto' }}>
-        <Table>
+          <Table>
           <TableHead sx={{ bgcolor: alpha(theme.palette.divider, 0.5) }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 800, color: 'text.secondary', py: 2 }}>{tabIndex === 0 ? "Annonce" : "Publicité"}</TableCell>
@@ -209,7 +238,7 @@ export default function AdminOffersPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-              {paginatedList.map((row) => (
+              {paginatedList.map((row: any) => (
                 <TableRow 
                   key={row.id} 
                   sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.02) } }}
@@ -282,7 +311,7 @@ export default function AdminOffersPage() {
                   </TableCell>
                 </TableRow>
               ))}
-            {filteredList.length === 0 && (
+            {paginatedList.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
                   <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 600 }}>Aucun élément trouvé.</Typography>
@@ -292,17 +321,83 @@ export default function AdminOffersPage() {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
       <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
         component="div"
-        count={filteredList.length}
+        count={totalOffersCount}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={(e, newPage) => setPage(newPage)}
         onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-        labelRowsPerPage="Éléments par page:"
+        labelRowsPerPage="Lignes par page:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`}
       />
       </Paper>
+
+      {/* MOBILE CARDS */}
+      <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
+        ) : paginatedList.length === 0 ? (
+          <Typography align="center" color="text.secondary" sx={{ py: 4 }}>Aucune offre ou publicité trouvée.</Typography>
+        ) : (
+          paginatedList.map((row: any) => (
+            <Paper key={row.id} sx={{ p: 2, borderRadius: 4, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', position: 'relative' }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  {tabIndex === 1 ? (
+                    <Avatar variant="rounded" src={row.ad_image_url} sx={{ width: 48, height: 48, bgcolor: alpha(theme.palette.secondary.main, 0.1), color: 'secondary.main' }}>
+                      <AddPhotoAlternateIcon />
+                    </Avatar>
+                  ) : (
+                    <Avatar sx={{ width: 48, height: 48, bgcolor: theme.palette.primary.main, fontWeight: 700 }}>
+                      {row.employer?.company_name?.[0] || 'E'}
+                    </Avatar>
+                  )}
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, mb: 0.5 }}>{row.title}</Typography>
+                    {tabIndex === 0 && <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{row.employer?.company_name}</Typography>}
+                    {tabIndex === 1 && <Typography variant="caption" color="text.secondary">{new Date(row.created_at).toLocaleDateString('fr-FR')}</Typography>}
+                  </Box>
+                </Box>
+                <IconButton onClick={(e) => { e.stopPropagation(); tabIndex === 0 ? setSelectedOffer(row) : setPreviewAd(row); }} sx={{ bgcolor: alpha(theme.palette.info.main, 0.1), color: 'info.main' }}>
+                  <VisibilityIcon fontSize="small" />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                {tabIndex === 0 ? (
+                  <>
+                    <Chip label={row.sector?.name || 'Général'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                    <Chip label={row.neighborhood?.name || 'Localisation inconnue'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                  </>
+                ) : (
+                  <Chip icon={<LinkIcon />} label={row.ad_url?.replace(/^https?:\/\//, '').substring(0, 20) + '...'} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                )}
+                <Chip label={row.is_active ? "En Ligne" : "Fermée"} size="small" color={row.is_active ? "success" : "default"} variant={row.is_active ? "filled" : "outlined"} sx={{ fontWeight: 700 }} />
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, borderTop: `1px solid ${theme.palette.divider}`, pt: 2 }}>
+                {tabIndex === 1 && (
+                  <Button size="small" startIcon={<EditIcon />} variant="outlined" onClick={() => handleOpenEditAd(row)} sx={{ borderRadius: 2 }}>Modifier</Button>
+                )}
+                <Button size="small" startIcon={<DeleteIcon />} color="error" variant="outlined" onClick={() => handleOpenDelete(row.id, row.title, row.is_ad)} sx={{ borderRadius: 2 }}>Supprimer</Button>
+              </Box>
+            </Paper>
+          ))
+        )}
+        <TablePagination
+          component="div"
+          count={totalOffersCount}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+          labelRowsPerPage=""
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count !== -1 ? count : `plus de ${to}`}`}
+          sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 2 }}
+        />
+      </Box>
 
       {/* Dialog Détails Offre (Améliorée) */}
       <Dialog 

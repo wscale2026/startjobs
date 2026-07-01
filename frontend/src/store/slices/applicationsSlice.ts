@@ -65,11 +65,21 @@ const applicationsSlice = createSlice({
       .addCase(createApplication.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
       })
+      .addCase(updateApplicationStatus.pending, (state, action) => {
+        const { id, status } = action.meta.arg;
+        const index = state.items.findIndex(app => app.id === id);
+        if (index !== -1) {
+          state.items[index].status = status;
+        }
+      })
       .addCase(updateApplicationStatus.fulfilled, (state, action) => {
         const index = state.items.findIndex(app => app.id === action.payload.id);
         if (index !== -1) {
           state.items[index] = action.payload;
         }
+      })
+      .addCase(deleteApplication.pending, (state, action) => {
+        state.items = state.items.filter((app) => app.id !== action.meta.arg);
       })
       .addCase(deleteApplication.fulfilled, (state, action) => {
         state.items = state.items.filter((app) => app.id !== action.payload);

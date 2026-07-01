@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, useTheme, Button, TextField, ListItem, ListItemText, IconButton, Chip, alpha, CircularProgress, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Typography, Paper, useTheme, Button, TextField, ListItem, ListItemText, IconButton, Chip, alpha, CircularProgress, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, Skeleton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 import PlaceIcon from '@mui/icons-material/Place';
 import EditIcon from '@mui/icons-material/Edit';
+import Fab from '@mui/material/Fab';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppDispatch } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
-import api from '../utils/api';
+import useSWR from 'swr';
+import api, { fetcher } from '../utils/api';
 
 interface Neighborhood {
   id: number;
@@ -20,9 +22,10 @@ export default function AdminLocationsPage() {
   const theme = useTheme();
   const dispatch = useAppDispatch();
 
+  const { data: rawData, error, mutate, isLoading: loading } = useSWR('/neighborhoods/', fetcher);
+
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [localCities, setLocalCities] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState(0); // 0: Villes, 1: Quartiers
@@ -30,6 +33,7 @@ export default function AdminLocationsPage() {
   const [newCityOpen, setNewCityOpen] = useState(false);
   const [newCityName, setNewCityName] = useState('');
   const [newNeighborhoodName, setNewNeighborhoodName] = useState('');
+  const [newNeighborhoodOpen, setNewNeighborhoodOpen] = useState(false);
 
   const [loadingAddNeighborhood, setLoadingAddNeighborhood] = useState(false);
   const [loadingDeleteCity, setLoadingDeleteCity] = useState(false);
@@ -41,29 +45,25 @@ export default function AdminLocationsPage() {
   const [editCityOpen, setEditCityOpen] = useState(false);
   const [cityToEdit, setCityToEdit] = useState<string | null>(null);
   const [newEditedCityName, setNewEditedCityName] = useState('');
+  const [searchNeighborhood, setSearchNeighborhood] = useState('');
 
   useEffect(() => {
-    fetchNeighborhoods();
-  }, []);
-
-  const fetchNeighborhoods = async () => {
-    try {
-      const res = await api.get('/neighborhoods/');
-      const data: Neighborhood[] = res.data.results || res.data;
+    if (rawData) {
+      const data: Neighborhood[] = rawData.results || rawData;
       setNeighborhoods(data);
       
-      const uniqueCities = Array.from(new Set(data.map(n => n.city).filter(Boolean)));
-      setLocalCities(uniqueCities);
+      const uniqueCities = Array.from(new Set(data.map((n: Neighborhood) => n.city).filter(Boolean)));
+      
+      setLocalCities(prev => {
+        const combined = new Set([...uniqueCities, ...prev]);
+        return Array.from(combined);
+      });
       
       if (uniqueCities.length > 0 && !selectedCity) {
-        setSelectedCity(uniqueCities[0]);
+        setSelectedCity(uniqueCities[0] as string);
       }
-    } catch {
-      dispatch(showSnackbar({ message: 'Erreur lors du chargement des localisations', severity: 'error' }));
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [rawData]);
 
   const handleAddCity = () => {
     const city = newCityName.trim();
@@ -105,6 +105,7 @@ export default function AdminLocationsPage() {
       dispatch(showSnackbar({ message: 'Erreur: Ce quartier existe peut-être déjà pour cette ville.', severity: 'error' }));
     } finally {
       setLoadingAddNeighborhood(false);
+      setNewNeighborhoodOpen(false);
     }
   };
 
@@ -200,15 +201,12 @@ export default function AdminLocationsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress size={60} thickness={4} sx={{ color: theme.palette.primary.main }} />
-      </Box>
-    );
-  }
 
-  const selectedCityNeighborhoods = neighborhoods.filter(n => n.city === selectedCity);
+
+  const selectedCityNeighborhoods = neighborhoods.filter(n => 
+    n.city === selectedCity && 
+    (searchNeighborhood ? n.name.toLowerCase().includes(searchNeighborhood.toLowerCase()) : true)
+  );
 
   return (
     <Box sx={{ pb: 6, maxWidth: 1400, mx: 'auto' }}>
@@ -277,77 +275,87 @@ export default function AdminLocationsPage() {
 
           {/* Liste Villes */}
           <Box sx={{ flex: 1, overflowY: 'auto', p: 2, bgcolor: alpha(theme.palette.background.default, 0.2) }}>
-            <AnimatePresence>
-              {localCities.map((city) => {
-                const count = neighborhoods.filter(n => n.city === city).length;
-                const isSelected = selectedCity === city;
-                return (
-                  <motion.div key={city} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
-                    <ListItem
-                      onClick={() => {
-                        setSelectedCity(city);
-                        if (window.innerWidth < 900) setMobileTab(1);
-                      }}
-                      sx={{ 
-                        borderRadius: '12px', 
-                        mb: 1, 
-                        cursor: 'pointer',
-                        bgcolor: isSelected ? 'primary.main' : 'background.paper',
-                        color: isSelected ? 'white' : 'text.primary',
-                        border: `1px solid ${isSelected ? theme.palette.primary.main : theme.palette.divider}`,
-                        boxShadow: isSelected ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}` : `0 2px 8px ${alpha(theme.palette.common.black, 0.02)}`,
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: isSelected ? `0 12px 28px ${alpha(theme.palette.primary.main, 0.4)}` : `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
-                        }
-                      }}
-                    >
-                      <ListItemText primary={city} slotProps={{ primary: { sx: { fontWeight: isSelected ? 800 : 600, fontSize: '1rem' } } }} />
-                      <Chip 
-                        label={count} 
-                        size="small" 
-                        sx={{ 
-                          fontWeight: 800, 
-                          mr: 1, 
-                          bgcolor: isSelected ? 'rgba(255,255,255,0.2)' : alpha(theme.palette.primary.main, 0.1),
-                          color: isSelected ? 'white' : 'primary.main',
-                        }} 
-                      />
-                      <IconButton 
-                        size="small"
-                        onClick={(e) => { e.stopPropagation(); openEditCity(city); }} 
-                        sx={{ 
-                          mr: 0.5,
-                          color: isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary', 
-                          transition: 'all 0.2s',
-                          '&:hover': { color: isSelected ? 'white' : 'primary.main', bgcolor: isSelected ? 'rgba(255,255,255,0.1)' : alpha(theme.palette.primary.main, 0.1) } 
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small"
-                        edge="end" 
-                        onClick={(e) => { e.stopPropagation(); confirmDeleteCity(city); }} 
-                        sx={{ 
-                          color: isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary', 
-                          transition: 'all 0.2s',
-                          '&:hover': { color: isSelected ? 'white' : 'error.main', bgcolor: isSelected ? 'rgba(255,255,255,0.1)' : alpha(theme.palette.error.main, 0.1) } 
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </ListItem>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-            {localCities.length === 0 && (
-              <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <LocationCityIcon sx={{ fontSize: 48, opacity: 0.2 }} />
-                <Typography sx={{ fontWeight: 600 }}>Aucune ville configurée.</Typography>
+            {loading ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} variant="rounded" height={60} sx={{ borderRadius: '12px' }} />
+                ))}
               </Box>
+            ) : (
+              <>
+                <AnimatePresence>
+                  {localCities.map((city) => {
+                    const count = neighborhoods.filter(n => n.city === city).length;
+                    const isSelected = selectedCity === city;
+                    return (
+                      <motion.div key={city} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}>
+                        <ListItem
+                          onClick={() => {
+                            setSelectedCity(city);
+                            if (window.innerWidth < 900) setMobileTab(1);
+                          }}
+                          sx={{ 
+                            borderRadius: '12px', 
+                            mb: 1, 
+                            cursor: 'pointer',
+                            bgcolor: isSelected ? 'primary.main' : 'background.paper',
+                            color: isSelected ? 'white' : 'text.primary',
+                            border: `1px solid ${isSelected ? theme.palette.primary.main : theme.palette.divider}`,
+                            boxShadow: isSelected ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}` : `0 2px 8px ${alpha(theme.palette.common.black, 0.02)}`,
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: isSelected ? `0 12px 28px ${alpha(theme.palette.primary.main, 0.4)}` : `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
+                            }
+                          }}
+                        >
+                          <ListItemText primary={city} slotProps={{ primary: { sx: { fontWeight: isSelected ? 800 : 600, fontSize: '1rem' } } }} />
+                          <Chip 
+                            label={count} 
+                            size="small" 
+                            sx={{ 
+                              fontWeight: 800, 
+                              mr: 1, 
+                              bgcolor: isSelected ? 'rgba(255,255,255,0.2)' : alpha(theme.palette.primary.main, 0.1),
+                              color: isSelected ? 'white' : 'primary.main',
+                            }} 
+                          />
+                          <IconButton 
+                            size="small"
+                            onClick={(e) => { e.stopPropagation(); openEditCity(city); }} 
+                            sx={{ 
+                              mr: 0.5,
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary', 
+                              transition: 'all 0.2s',
+                              '&:hover': { color: isSelected ? 'white' : 'primary.main', bgcolor: isSelected ? 'rgba(255,255,255,0.1)' : alpha(theme.palette.primary.main, 0.1) } 
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton 
+                            size="small"
+                            edge="end" 
+                            onClick={(e) => { e.stopPropagation(); confirmDeleteCity(city); }} 
+                            sx={{ 
+                              color: isSelected ? 'rgba(255,255,255,0.8)' : 'text.secondary', 
+                              transition: 'all 0.2s',
+                              '&:hover': { color: isSelected ? 'white' : 'error.main', bgcolor: isSelected ? 'rgba(255,255,255,0.1)' : alpha(theme.palette.error.main, 0.1) } 
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </ListItem>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+                {!loading && localCities.length === 0 && (
+                  <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <LocationCityIcon sx={{ fontSize: 48, opacity: 0.2 }} />
+                    <Typography sx={{ fontWeight: 600 }}>Aucune ville configurée.</Typography>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Paper>
@@ -371,7 +379,20 @@ export default function AdminLocationsPage() {
             bgcolor: 'background.paper'
           }}
         >
-          {selectedCity ? (
+          {loading ? (
+            <Box sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+                <Skeleton variant="text" width={200} height={32} />
+                <Skeleton variant="rounded" width={40} height={24} />
+              </Box>
+              <Skeleton variant="rounded" width="100%" height={56} sx={{ mb: 4 }} />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <Skeleton key={i} variant="rounded" width={80 + Math.random() * 40} height={40} sx={{ borderRadius: '10px' }} />
+                ))}
+              </Box>
+            </Box>
+          ) : selectedCity ? (
             <>
               {/* Header Quartiers */}
               <Box sx={{ p: 3, bgcolor: alpha(theme.palette.secondary.main, 0.03), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -382,7 +403,7 @@ export default function AdminLocationsPage() {
               </Box>
 
               {/* Formulaire Quartiers */}
-              <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
+              <Box sx={{ display: { xs: 'none', md: 'block' }, p: 3, borderBottom: `1px solid ${theme.palette.divider}`, bgcolor: alpha(theme.palette.background.default, 0.5) }}>
                 <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
                   <TextField 
                     fullWidth 
@@ -414,6 +435,21 @@ export default function AdminLocationsPage() {
 
               {/* Liste Quartiers (Chips) */}
               <Box sx={{ flex: 1, overflowY: 'auto', p: 4, bgcolor: alpha(theme.palette.background.default, 0.2) }}>
+                <Box sx={{ mb: 3 }}>
+                  <TextField 
+                    fullWidth 
+                    size="small"
+                    placeholder="Rechercher un quartier..." 
+                    value={searchNeighborhood}
+                    onChange={(e) => setSearchNeighborhood(e.target.value)}
+                    sx={{ 
+                      '& .MuiOutlinedInput-root': { 
+                        borderRadius: '10px',
+                        bgcolor: 'background.paper',
+                      } 
+                    }} 
+                  />
+                </Box>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
                   <AnimatePresence>
                     {selectedCityNeighborhoods.map((n) => (
@@ -542,6 +578,40 @@ export default function AdminLocationsPage() {
         </DialogActions>
       </Dialog>
 
+      {/* FAB Mobile */}
+      <Fab 
+        color={mobileTab === 0 ? "primary" : "secondary"} 
+        sx={{ position: 'fixed', bottom: 80, right: 16, display: { xs: 'flex', md: 'none' }, zIndex: 1100 }}
+        onClick={() => mobileTab === 0 ? setNewCityOpen(true) : setNewNeighborhoodOpen(true)}
+      >
+        <AddIcon />
+      </Fab>
+
+      {/* Add Neighborhood Dialog */}
+      <Dialog open={newNeighborhoodOpen} onClose={() => setNewNeighborhoodOpen(false)} slotProps={{ paper: { sx: { borderRadius: '20px', width: '100%', maxWidth: 400 } } }}>
+        <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>Nouveau Quartier</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Ajoutez un quartier à la ville de <strong>{selectedCity}</strong>.
+          </Typography>
+          <TextField
+            autoFocus
+            label="Nom du quartier"
+            fullWidth
+            variant="outlined"
+            value={newNeighborhoodName}
+            onChange={(e) => setNewNeighborhoodName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddNeighborhood()}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0, gap: 1 }}>
+          <Button onClick={() => setNewNeighborhoodOpen(false)} color="inherit" sx={{ fontWeight: 700, borderRadius: '10px' }}>Annuler</Button>
+          <Button onClick={handleAddNeighborhood} variant="contained" color="secondary" disableElevation disabled={loadingAddNeighborhood} sx={{ fontWeight: 700, borderRadius: '10px', px: 3 }}>
+            {loadingAddNeighborhood ? <CircularProgress size={24} color="inherit" /> : 'Ajouter'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

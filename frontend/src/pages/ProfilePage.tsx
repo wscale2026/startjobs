@@ -26,6 +26,7 @@ import EditProfileModal from '../components/EditProfileModal';
 import { fetchOffers } from '../store/slices/offersSlice';
 import { fetchApplications } from '../store/slices/applicationsSlice';
 import { getFullMediaUrl } from '../utils/api';
+import { useAvatarViewer } from '../components/AvatarViewer';
 
 // Use first mock worker as the "current user" profile
 const ME = MOCK_WORKERS[0];
@@ -48,6 +49,7 @@ export default function ProfilePage() {
   }, [isEmployer, offersStatus, appsStatus, dispatch]);
   const [logoutOpen, setLogoutOpen] = React.useState(false);
   const [editOpen, setEditOpen] = React.useState(false);
+  const { openViewer } = useAvatarViewer();
 
   const candXP = user?.candidate_profile?.experiences || [];
   const sortedXP = [...candXP].sort((a: any) => a.exp_type === 'verified' ? -1 : 1);
@@ -94,13 +96,21 @@ export default function ProfilePage() {
           <Box sx={{ position: 'absolute', bottom: { xs: -40, md: -50 }, left: { xs: 24, md: 32 } }}>
             <Avatar 
               src={getFullMediaUrl(user?.employer_profile?.logo) || undefined}
+              onClick={() => openViewer(
+                getFullMediaUrl(user?.employer_profile?.logo),
+                user?.employer_profile?.company_name || user?.username || 'Entreprise',
+                (user?.employer_profile?.company_name || user?.username || 'E')[0].toUpperCase()
+              )}
               sx={{ 
                 width: { xs: 80, md: 120 }, 
                 height: { xs: 80, md: 120 }, 
                 bgcolor: theme.palette.background.paper, 
                 color: 'primary.main',
                 border: `4px solid ${theme.palette.background.default}`,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': { transform: 'scale(1.05)', boxShadow: '0 12px 32px rgba(0,0,0,0.2)' },
               }}
             >
               {!user?.employer_profile?.logo && <BusinessIcon sx={{ fontSize: { xs: 40, md: 60 } }} />}
@@ -354,6 +364,11 @@ export default function ProfilePage() {
         <Box sx={{ position: 'absolute', bottom: { xs: -40, md: -50 }, left: { xs: 24, md: 32 } }}>
           <Avatar 
             src={getFullMediaUrl(user?.candidate_profile?.photo) || undefined}
+            onClick={() => openViewer(
+              getFullMediaUrl(user?.candidate_profile?.photo),
+              `${user?.last_name || ''} ${user?.first_name || ''}`.trim() || user?.username || 'Candidat',
+              (user?.first_name ? user.first_name[0].toUpperCase() : user?.username ? user.username[0].toUpperCase() : 'C')
+            )}
             sx={{ 
               width: { xs: 80, md: 120 }, 
               height: { xs: 80, md: 120 }, 
@@ -362,7 +377,10 @@ export default function ProfilePage() {
               fontWeight: 800, 
               color: 'white',
               border: `4px solid ${theme.palette.background.default}`,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': { transform: 'scale(1.05)', boxShadow: '0 12px 32px rgba(0,0,0,0.2)' },
             }}
           >
             {!user?.candidate_profile?.photo && (user?.first_name ? user.first_name[0].toUpperCase() : user?.username ? user.username[0].toUpperCase() : 'C')}
@@ -375,7 +393,7 @@ export default function ProfilePage() {
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
             <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: { xs: '1.75rem', md: '2.125rem' } }}>
-              {`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Candidat'}
+              {`${user?.last_name || ''} ${user?.first_name || ''}`.trim() || user?.username || 'Candidat'}
             </Typography>
             {user?.candidate_profile?.score && user?.candidate_profile?.score >= 4.5 && <VerifiedBadge />}
           </Box>

@@ -379,8 +379,3 @@ export const MOCK_WORKERS: Worker[] = [
   },
 ];
 
-export const DOMAINES = [
-  'Construction', 'Cuisine', 'Électricité', 'Ménage', 'Livraison',
-  'Coiffure', 'Plomberie', 'Secrétariat', 'Sécurité', 'Couture',
-  'Informatique', 'Enseignement', 'Peinture', 'Maintenance',
-];

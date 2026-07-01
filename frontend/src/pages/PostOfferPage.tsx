@@ -15,7 +15,6 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { showSnackbar } from '../store/slices/snackbarSlice';
 import { MOCK_OFFERS } from '../mocks/offers';
 import QUARTIERS from '../mocks/quartiers';
-import { DOMAINES } from '../mocks/workers';
 import { createOffer, fetchOffers, updateOffer } from '../store/slices/offersSlice';
 
 export default function PostOfferPage() {
@@ -51,6 +50,8 @@ export default function PostOfferPage() {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const editId = query.get('edit');
+  const sectors = useAppSelector((state) => state.taxonomy.sectors);
+  const dynamicSectors = sectors.length > 0 ? sectors : ['Construction', 'Cuisine', 'Électricité', 'Ménage', 'Livraison', 'Coiffure', 'Plomberie', 'Secrétariat', 'Sécurité', 'Couture', 'Informatique', 'Enseignement', 'Peinture', 'Maintenance'];
 
   const [form, setForm] = useState({
     titre: '', domaine: '', description: '',
@@ -118,7 +119,7 @@ export default function PostOfferPage() {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ position: 'relative', minHeight: '100vh', pb: 10 }}>
+    <Box component="form" onSubmit={handleSubmit} sx={{ position: 'relative', minHeight: '100vh', pb: { xs: 24, md: 14 } }}>
       <Container maxWidth="md" sx={{ pt: { xs: 2, md: 4 } }}>
         {/* En-tête */}
         <Box sx={{ mb: 4 }}>
@@ -184,7 +185,7 @@ export default function PostOfferPage() {
                   onChange={(e) => handleChange('domaine', e.target.value)}
                   sx={{ borderRadius: '12px' }}
                 >
-                  {DOMAINES.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                  {dynamicSectors.map((d: string) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                 </Select>
               </FormControl>
             </Grid>
@@ -296,21 +297,20 @@ export default function PostOfferPage() {
         </Paper>
       </Container>
 
-      {/* Barre d'Actions (Statique sur Mobile, Flottante sur Desktop) */}
+      {/* Barre d'Actions (Flottante sur tous les écrans) */}
       <Box 
         sx={{ 
-          position: { xs: 'relative', md: 'fixed' },
-          bottom: { md: 0 },
-          left: { md: 0 },
-          right: { md: 0 },
-          p: { xs: 0, md: 2 },
-          mt: { xs: 2, md: 0 },
-          mb: { xs: 12, md: 0 }, // Espace en bas sur mobile pour la BottomNavigation de AppLayout
-          zIndex: 10,
-          bgcolor: { xs: 'transparent', md: theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.85)' : 'rgba(255, 255, 255, 0.85)' },
-          backdropFilter: { md: 'blur(12px)' },
-          borderTop: { md: `1px solid ${theme.palette.divider}` },
-          boxShadow: { md: '0 -4px 20px rgba(0,0,0,0.05)' }
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          p: { xs: 2, md: 2 },
+          pb: { xs: 12, md: 2 }, // Padding extra sur mobile pour éviter la bottom nav globale
+          zIndex: 100,
+          bgcolor: theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          borderTop: `1px solid ${theme.palette.divider}`,
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.06)'
         }}
       >
         <Container maxWidth="md" sx={{ display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: 'flex-end', alignItems: { xs: 'stretch', sm: 'center' }, gap: 2 }}>

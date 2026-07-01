@@ -15,31 +15,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import useSWR from 'swr';
 import { fetcher } from '../utils/api';
 
-const dataOffersByDay = [
-  { name: 'Lun', offres: 45 },
-  { name: 'Mar', offres: 52 },
-  { name: 'Mer', offres: 38 },
-  { name: 'Jeu', offres: 65 },
-  { name: 'Ven', offres: 48 },
-  { name: 'Sam', offres: 20 },
-  { name: 'Dim', offres: 15 },
-];
 
-const dataSectors = [
-  { name: 'BTP & Construction', value: 45 },
-  { name: 'IT & Digital', value: 30 },
-  { name: 'Vente & Commerce', value: 15 },
-  { name: 'Restauration', value: 10 },
-];
-
-const dataRadar = [
-  { subject: 'BTP', A: 120, B: 110, fullMark: 150 },
-  { subject: 'IT', A: 98, B: 130, fullMark: 150 },
-  { subject: 'Vente', A: 86, B: 130, fullMark: 150 },
-  { subject: 'Resto', A: 99, B: 100, fullMark: 150 },
-  { subject: 'Santé', A: 85, B: 90, fullMark: 150 },
-  { subject: 'Éduc', A: 65, B: 85, fullMark: 150 },
-];
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -72,7 +48,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function AdminDashboardPage() {
   const theme = useTheme();
   
-  const { data: stats, error } = useSWR('/admin/dashboard/', fetcher);
+  const { data: stats, error } = useSWR('/admin/dashboard/', fetcher, { refreshInterval: 10000 });
   const loading = !stats && !error;
 
   if (loading || !stats) {
@@ -108,11 +84,29 @@ export default function AdminDashboardPage() {
     { date: 'Dim', inscrits: 0 },
   ];
 
+  const dataOffersByDay = stats.offers_by_day && stats.offers_by_day.length > 0 ? stats.offers_by_day : [
+    { name: 'Lun', offres: 0 },
+    { name: 'Mar', offres: 0 },
+    { name: 'Mer', offres: 0 },
+    { name: 'Jeu', offres: 0 },
+    { name: 'Ven', offres: 0 },
+    { name: 'Sam', offres: 0 },
+    { name: 'Dim', offres: 0 },
+  ];
+
+  const dataSectors = stats.sectors_data && stats.sectors_data.length > 0 ? stats.sectors_data : [
+    { name: 'Aucun secteur', value: 100 }
+  ];
+
+  const dataRadar = stats.radar_data && stats.radar_data.length > 0 ? stats.radar_data : [
+    { subject: 'Aucune donnée', A: 0, B: 0, fullMark: 100 }
+  ];
+
   return (
     <Box sx={{ pb: 6 }}>
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 0.5, fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
             Tableau de Bord Pro
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -125,12 +119,12 @@ export default function AdminDashboardPage() {
       {/* Grille dense de KPIs */}
       <Grid container spacing={2.5} sx={{ mb: 4 }}>
         {kpis.map((kpi, i) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 4 }} key={kpi.title}>
+          <Grid size={{ xs: 6, sm: 6, md: 4, lg: 4 }} key={kpi.title}>
             <Box component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <TiltCard
                 scaleOnHover={1.02}
                 sx={{
-                  p: 2.5,
+                  p: { xs: 1.5, md: 2.5 },
                   borderRadius: '20px',
                   bgcolor: 'background.paper',
                   border: `1px solid ${alpha(kpi.color, 0.2)}`,
@@ -146,14 +140,14 @@ export default function AdminDashboardPage() {
                   <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: alpha(kpi.color, 0.1), color: kpi.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {kpi.icon}
                   </Box>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: { xs: '0.65rem', md: '0.875rem' }, lineHeight: 1.2 }}>
                     {kpi.title}
                   </Typography>
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', mb: 0.5, letterSpacing: '-0.02em' }}>
+                <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', mb: 0.5, letterSpacing: '-0.02em', fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
                   {kpi.value}
                 </Typography>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: kpi.color, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: kpi.color, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: { xs: '0.65rem', md: '0.75rem' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   <TrendingUpIcon fontSize="small" /> {kpi.sub}
                 </Typography>
               </TiltCard>
@@ -176,7 +170,7 @@ export default function AdminDashboardPage() {
             </Box>
             
             <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <AreaChart data={dataGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorInscr" x1="0" y1="0" x2="0" y2="1">
@@ -208,7 +202,7 @@ export default function AdminDashboardPage() {
               </Box>
             </Box>
             <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <BarChart data={dataOffersByDay} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorOffres" x1="0" y1="0" x2="0" y2="1">
@@ -235,7 +229,7 @@ export default function AdminDashboardPage() {
               <Typography variant="body2" color="text.secondary">Candidats vs Offres d'emploi</Typography>
             </Box>
             <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataRadar}>
                 <PolarGrid stroke={alpha(theme.palette.divider, 0.8)} />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: theme.palette.text.secondary, fontSize: 12, fontWeight: 700 }} />
@@ -258,7 +252,7 @@ export default function AdminDashboardPage() {
             </Box>
             
             <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <PieChart>
                 <defs>
                   <filter id="pieShadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -266,7 +260,7 @@ export default function AdminDashboardPage() {
                   </filter>
                 </defs>
                 <Pie data={dataSectors} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none" style={{ filter: 'url(#pieShadow)' }}>
-                  {dataSectors.map((entry, index) => (
+                  {dataSectors.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -276,7 +270,7 @@ export default function AdminDashboardPage() {
             </Box>
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2, flexShrink: 0 }}>
-              {dataSectors.slice(0, 3).map((s, i) => (
+              {dataSectors.slice(0, 3).map((s: any, i: number) => (
                 <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ width: 12, height: 12, borderRadius: '4px', bgcolor: COLORS[i % COLORS.length] }} />
@@ -298,7 +292,7 @@ export default function AdminDashboardPage() {
             </Box>
             
             <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <PieChart>
                 <defs>
                   <filter id="pieShadow2" x="-20%" y="-20%" width="140%" height="140%">
@@ -306,7 +300,7 @@ export default function AdminDashboardPage() {
                   </filter>
                 </defs>
                 <Pie data={dataUsers} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={6} dataKey="value" stroke="none" style={{ filter: 'url(#pieShadow2)' }}>
-                  {dataUsers.map((entry, index) => (
+                  {dataUsers.map((entry: any, index: number) => (
                     <Cell key={`cell-user-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                   ))}
                 </Pie>
@@ -316,7 +310,7 @@ export default function AdminDashboardPage() {
             </Box>
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2, flexShrink: 0 }}>
-              {dataUsers.map((s, i) => (
+              {dataUsers.map((s: any, i: number) => (
                 <Box key={s.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ width: 12, height: 12, borderRadius: '4px', bgcolor: COLORS[(i + 2) % COLORS.length] }} />

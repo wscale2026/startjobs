@@ -22,9 +22,11 @@ import { fetchOffers, deleteOffer } from '../store/slices/offersSlice';
 import { fetchApplications, updateApplicationStatus, deleteApplication } from '../store/slices/applicationsSlice';
 import RatingDialog from '../components/RatingDialog';
 import KycSubmissionModal from '../components/KycSubmissionModal';
+import EmployerKycFlow from '../components/EmployerKycFlow';
 import LockIcon from '@mui/icons-material/Lock';
 import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import CardSkeleton from '../components/CardSkeleton';
 
 
 
@@ -87,6 +89,10 @@ export default function EmployerDashboardPage() {
         } else if (newStatus === 'rejected') {
           dispatch(showSnackbar({ message: 'Candidature refusée.', severity: 'info' }));
         }
+      })
+      .catch(() => {
+        dispatch(fetchApplications());
+        dispatch(showSnackbar({ message: 'Erreur réseau, le statut n\'a pas pu être mis à jour.', severity: 'error' }));
       });
   };
 
@@ -95,6 +101,10 @@ export default function EmployerDashboardPage() {
       .unwrap()
       .then(() => {
         dispatch(showSnackbar({ message: 'Candidature retirée de votre historique.', severity: 'info' }));
+      })
+      .catch(() => {
+        dispatch(fetchApplications());
+        dispatch(showSnackbar({ message: 'Erreur réseau, annulation de la suppression.', severity: 'error' }));
       });
   };
 
@@ -134,6 +144,15 @@ export default function EmployerDashboardPage() {
     setTargetId(null);
   };
 
+  if (kycModalOpen) {
+    return (
+      <EmployerKycFlow 
+        employerType={employerType} 
+        onClose={() => setKycModalOpen(false)} 
+      />
+    );
+  }
+
   return (
     <Box sx={{ pb: { xs: 12, md: 4 } }}>
       {/* ─── HERO / GREETING ────────────────────────────────────────────────────────── */}
@@ -143,8 +162,11 @@ export default function EmployerDashboardPage() {
           pt: { xs: 4, md: 6 },
           pb: 4,
           background: isDark
-            ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, transparent 100%)`
-            : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
+            ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, transparent 100%)`
+            : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 100%)`,
+          borderBottomLeftRadius: { xs: 24, md: 32 },
+          borderBottomRightRadius: { xs: 24, md: 32 },
+          mx: { xs: -2, md: 0 },
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em' }}>
@@ -203,57 +225,61 @@ export default function EmployerDashboardPage() {
           )}
         </Box>
 
-        {/* ─── STATS GRID ─────────────────────────────────────────────────────────────── */}
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 4 }}>
+        {/* ─── STATS WIDGETS (Grid Layout) ────────────────────────────── */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <Box
               sx={{
-                p: 3,
+                p: { xs: 2, md: 3 },
                 borderRadius: 4,
-                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.6)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)',
                 border: `1px solid ${theme.palette.divider}`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.02)',
                 transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-2px)' }
+                '&:active': { transform: 'scale(0.98)' },
+                height: '100%'
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, display: 'flex' }}>
-                  <VisibilityIcon />
+                <Box sx={{ p: 1.25, borderRadius: 3, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, display: 'flex' }}>
+                  <VisibilityIcon fontSize="small" />
                 </Box>
-                <Chip label="+14%" size="small" sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 700, borderRadius: 1 }} />
+                <Chip label="+14%" size="small" sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 700, borderRadius: 2 }} />
               </Box>
-              <Typography color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 600, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Total des annonces
+              <Typography color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, fontWeight: 600, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Total annonces
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800 }}>
+              <Typography variant="h3" sx={{ fontWeight: 800, fontSize: { xs: '1.75rem', md: '3rem' } }}>
                 {activeOffers.length}
               </Typography>
             </Box>
           </Grid>
           
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid size={{ xs: 6, sm: 4 }}>
             <Box
               sx={{
-                p: 3,
+                p: { xs: 2, md: 3 },
                 borderRadius: 4,
-                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.6)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)',
                 border: `1px solid ${theme.palette.divider}`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.02)',
                 transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-2px)' }
+                '&:active': { transform: 'scale(0.98)' },
+                height: '100%'
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, display: 'flex' }}>
-                  <PeopleIcon />
+                <Box sx={{ p: 1.25, borderRadius: 3, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, display: 'flex' }}>
+                  <PeopleIcon fontSize="small" />
                 </Box>
-                <Chip label="+nouveaux" size="small" sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 700, borderRadius: 1 }} />
+                <Chip label="+Nouveaux" size="small" sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 700, borderRadius: 2, display: { xs: 'none', sm: 'flex' } }} />
               </Box>
-              <Typography color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 600, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Candidatures reçues
+              <Typography color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, fontWeight: 600, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Candidatures
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800 }}>
+              <Typography variant="h3" sx={{ fontWeight: 800, fontSize: { xs: '1.75rem', md: '3rem' } }}>
                 {allApplications.length}
               </Typography>
             </Box>
@@ -262,25 +288,27 @@ export default function EmployerDashboardPage() {
           <Grid size={{ xs: 12, sm: 4 }}>
             <Box
               sx={{
-                p: 3,
+                p: { xs: 2, md: 3 },
                 borderRadius: 4,
-                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.6)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)',
                 border: `1px solid ${theme.palette.divider}`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: isDark ? 'none' : '0 4px 20px rgba(0,0,0,0.02)',
                 transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-2px)' }
+                '&:active': { transform: 'scale(0.98)' },
+                height: '100%'
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ p: 1, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, display: 'flex' }}>
-                  <TrendingUpIcon />
+                <Box sx={{ p: 1.25, borderRadius: 3, bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main, display: 'flex' }}>
+                  <TrendingUpIcon fontSize="small" />
                 </Box>
-                <Chip label="+2%" size="small" sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 700, borderRadius: 1 }} />
+                <Chip label="+2%" size="small" sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main, fontWeight: 700, borderRadius: 2 }} />
               </Box>
-              <Typography color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 600, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <Typography color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, fontWeight: 600, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Match Moyen
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 800 }}>
+              <Typography variant="h3" sx={{ fontWeight: 800, fontSize: { xs: '1.75rem', md: '3rem' } }}>
                 {averageMatch}
               </Typography>
             </Box>
@@ -301,8 +329,15 @@ export default function EmployerDashboardPage() {
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {applicants.map((applicant: any) => (
-              <Box
+            {appsStatus === 'loading' && applicants.length === 0 ? (
+              <CardSkeleton count={3} />
+            ) : applicants.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                Aucune candidature reçue pour le moment.
+              </Typography>
+            ) : (
+              applicants.map((applicant: any) => (
+                <Box
                 key={applicant.id}
                 sx={{
                   display: 'flex',
@@ -551,7 +586,8 @@ export default function EmployerDashboardPage() {
                   )}
                 </Box>
               </Box>
-            ))}
+            ))
+            )}
           </Box>
         </Box>
 
@@ -569,10 +605,15 @@ export default function EmployerDashboardPage() {
             sx={{
               py: 2,
               mb: 4,
-              borderRadius: 3,
-              fontWeight: 700,
+              borderRadius: 4,
+              fontWeight: 800,
               fontSize: '1.05rem',
-              boxShadow: isRestricted ? 'none' : `0 8px 24px -8px ${theme.palette.primary.main}`,
+              background: isRestricted ? undefined : `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              color: isRestricted ? undefined : '#fff',
+              boxShadow: isRestricted ? 'none' : `0 8px 24px -6px ${theme.palette.primary.main}`,
+              textTransform: 'none',
+              transition: 'all 0.2s',
+              '&:active': { transform: 'scale(0.98)' }
             }}
           >
             {isRestricted ? 'Publication Bloquée' : 'Publier une annonce'}
@@ -583,12 +624,14 @@ export default function EmployerDashboardPage() {
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {activeOffers.length === 0 && (
+            {offersStatus === 'loading' && activeOffers.length === 0 ? (
+              <CardSkeleton count={2} />
+            ) : activeOffers.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
                 Aucune annonce publiée pour le moment.
               </Typography>
-            )}
-            {activeOffers.map((offer: any) => (
+            ) : (
+            activeOffers.map((offer: any) => (
               <Box
                 key={offer.id}
                 sx={{
@@ -617,7 +660,8 @@ export default function EmployerDashboardPage() {
                   <Chip label="Urgent" size="small" color="error" sx={{ fontWeight: 600, height: 20, fontSize: '0.7rem' }} />
                 )}
               </Box>
-            ))}
+            ))
+            )}
           </Box>
         </Box>
       </Box>
@@ -655,13 +699,6 @@ export default function EmployerDashboardPage() {
         missionId={ratingMissionId}
         onClose={() => setRatingMissionId(null)}
         onSuccess={() => dispatch(fetchApplications())}
-      />
-
-      {/* KYC Modal */}
-      <KycSubmissionModal
-        open={kycModalOpen}
-        onClose={() => setKycModalOpen(false)}
-        employerType={employerType}
       />
     </Box>
   );
