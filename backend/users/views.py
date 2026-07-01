@@ -100,60 +100,15 @@ class RegisterView(generics.CreateAPIView):
             if s.notify_admins_on_registration:
                 threading.Thread(target=notify_admins_new_registration, args=(user, s)).start()
                 
-            admin_user = User.objects.filter(is_superuser=True).first()
-            if admin_user:
-                from interactions.models import Conversation, Message
-                conv = Conversation.objects.create()
-                conv.participants.add(admin_user, user)
-                
-                welcome_text = f"""Bonjour {user.first_name or user.username} 👋,
-
-Bienvenue sur StartJobs ! Nous sommes ravis de vous compter parmi nous.
-
-Pour maximiser vos chances de trouver l'emploi idéal, voici quelques étapes à suivre :
-1. Complétez votre profil à 100% (ajoutez une photo, une bio et vos expériences).
-2. Définissez votre localisation précise pour recevoir des offres de proximité.
-3. Consultez régulièrement le Dashboard pour ne manquer aucune nouvelle offre.
-
-Si vous avez la moindre question, n'hésitez pas à répondre directement à ce message.
-
-L'équipe StartJobs."""
-                Message.objects.create(
-                    conversation=conv,
-                    sender=admin_user,
-                    text=welcome_text
-                )
-                
         elif user.role == 'employer':
             if s.notify_admins_on_employer_registration:
                 threading.Thread(target=notify_admins_new_registration, args=(user, s)).start()
                 
-            admin_user = User.objects.filter(is_superuser=True).first()
-            if admin_user:
-                from interactions.models import Conversation, Message
-                conv = Conversation.objects.create()
-                conv.participants.add(admin_user, user)
-                
-                welcome_text = f"""Bonjour {user.first_name or user.username} 👋,
+        # NOTE: Welcome messages are sent by email only (send_welcome_email / send_verification_email).
+        # We do NOT create in-app conversations automatically on registration, as this
+        # causes data leakage: the superadmin account would accumulate all user conversations.
+        # Users can initiate a conversation with support themselves if needed.
 
-Bienvenue sur StartJobs ! Nous sommes très heureux de vous compter parmi nos employeurs.
-
-Votre compte est désormais actif.
-Vous pouvez dès à présent publier vos offres d'emploi, parcourir les profils des candidats locaux et communiquer avec eux.
-
-Afin de garantir la sécurité et la fiabilité de notre plateforme pour tous nos utilisateurs, nous vous invitons à soumettre vos documents d'identité pour la vérification de votre compte.
-
-👉 Pour cela, veuillez vous rendre sur votre tableau de bord employeur et cliquer sur le bouton de soumission des documents.
-
-Si vous avez la moindre question, n'hésitez pas à répondre directement à ce message.
-
-L'équipe StartJobs."""
-                Message.objects.create(
-                    conversation=conv,
-                    sender=admin_user,
-                    text=welcome_text
-                )
-                
         return response
 
 def send_welcome_email(user, site_settings):

@@ -482,33 +482,8 @@ class AdminUpdateUserView(APIView):
                         print(f"Error sending verified badge email to {user.email}: {e}")
                 
                 threading.Thread(target=send_badge_email).start()
-                
-                def create_badge_internal_message():
-                    try:
-                        superadmin = User.objects.filter(is_superuser=True).first()
-                        if superadmin:
-                            conv = Conversation.objects.filter(participants=user).filter(participants=superadmin).first()
-                            if not conv:
-                                conv = Conversation.objects.create()
-                                conv.participants.add(user, superadmin)
-                            
-                            instructions = (
-                                f"Félicitations {user.first_name or user.username} ! 🏆\n\n"
-                                f"L'administration de {s.site_name} vous a accordé le badge officiel 'Employeur Vérifié'.\n"
-                                "Ce badge bleu apparaîtra désormais sur toutes vos annonces et sur votre profil, rassurant ainsi les candidats sur le sérieux de votre entreprise.\n\n"
-                                "Cela augmentera considérablement le nombre de candidatures pertinentes sur vos offres.\n"
-                                "Merci pour votre confiance !"
-                            )
-                            
-                            Message.objects.create(
-                                conversation=conv,
-                                sender=superadmin,
-                                text=instructions
-                            )
-                    except Exception as e:
-                        print(f"Error creating internal message: {e}")
-                
-                threading.Thread(target=create_badge_internal_message).start()
+                # NOTE: Internal message via conversation system removed to prevent
+                # data leakage between user accounts. Email notification is sufficient.
             
             if old_kyc_status != 'approved' and profile.kyc_status == 'approved':
                 import threading
@@ -569,38 +544,8 @@ class AdminUpdateUserView(APIView):
                         print(f"Error sending KYC approval email to {user.email}: {e}")
                 
                 threading.Thread(target=send_approval_email).start()
-                
-                # Send internal message in background too (just in case it's slow, though DB operations are fast)
-                def create_internal_message():
-                    try:
-                        superadmin = User.objects.filter(is_superuser=True).first()
-                        if superadmin:
-                            conv = Conversation.objects.filter(participants=user).filter(participants=superadmin).first()
-                            if not conv:
-                                conv = Conversation.objects.create()
-                                conv.participants.add(user, superadmin)
-                            
-                            instructions = (
-                                f"Félicitations {user.first_name or user.username} ! 🎉\n\n"
-                                f"Vos documents d'identité ont été validés avec succès par l'équipe {s.site_name}.\n"
-                                "Toutes les fonctionnalités de votre compte employeur sont maintenant débloquées.\n\n"
-                                "Voici quelques conseils pour bien démarrer :\n"
-                                "1. Assurez-vous que les informations de votre entreprise sont complètes dans votre profil.\n"
-                                "2. Cliquez sur 'Publier une annonce' pour créer votre première offre d'emploi.\n"
-                                "3. Consultez la liste des candidats et trouvez les meilleurs profils de votre quartier.\n"
-                                "4. Discutez directement avec les candidats via cette messagerie intégrée.\n\n"
-                                "Nous vous souhaitons d'excellents recrutements !"
-                            )
-                            
-                            Message.objects.create(
-                                conversation=conv,
-                                sender=superadmin,
-                                text=instructions
-                            )
-                    except Exception as e:
-                        print(f"Error creating internal message: {e}")
-                
-                threading.Thread(target=create_internal_message).start()
+                # NOTE: Internal message via conversation system removed to prevent
+                # data leakage between user accounts. Email notification is sufficient.
                 
             elif old_kyc_status != 'rejected' and profile.kyc_status == 'rejected':
                 import threading

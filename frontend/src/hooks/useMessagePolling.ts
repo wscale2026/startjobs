@@ -17,26 +17,37 @@ async function requestNotificationPermission(): Promise<void> {
 }
 
 // Show a browser/OS push notification (like WhatsApp Web)
-function showPushNotification(senderName: string, body: string): void {
+async function showPushNotification(senderName: string, body: string): Promise<void> {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
-    const notification = new Notification(`📩 ${senderName}`, {
+    const title = `📩 Nouveau message de ${senderName}`;
+    const options = {
       body,
       icon: '/favicon.svg',
       badge: '/favicon.svg',
-      tag: 'startjobs-message',   // replaces previous notif of same tag
+      tag: 'startjobs-message',
       renotify: true,
-      silent: false,               // let the OS play its own notification sound
-    } as any);
-    // Auto-close after 5 seconds
+      silent: false,
+      vibrate: [200, 100, 200]
+    };
+
+    // Use Service Worker if available (required for Android mobile notifications)
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration && registration.showNotification) {
+        await registration.showNotification(title, options);
+        return;
+      }
+    }
+
+    // Fallback for desktop browsers
+    const notification = new Notification(title, options as any);
     setTimeout(() => notification.close(), 5000);
-    // Clicking the notification brings the tab into focus
     notification.onclick = () => {
       window.focus();
       notification.close();
     };
   } catch (e) {
-    // some browsers block Notification on non-HTTPS — silently ignore
     console.warn('Push notification failed:', e);
   }
 }
@@ -132,18 +143,15 @@ export function useMessagePolling(intervalMs = 5000) {
         const totalUnread: number = mapped.reduce((sum: number, c: any) => sum + c.unread, 0);
 
         if (!isFirstFetchRef.current && totalUnread > prevUnreadCountRef.current) {
-          // 1. In-app snackbar - format as WHATSAPP|sender|message to be parsed by SnackbarProvider
-          dispatch(showSnackbar({ message: `WHATSAPP|${latestSenderName}|${latestMessageBody}`, severity: 'info' }));
+          // Send OS push notification (Service Worker / Native)
+          await showPushNotification(latestSenderName, latestMessageBody);
 
-          // 2. OS push notification (like WhatsApp Web) — works when tab is in background
-          showPushNotification(latestSenderName, latestMessageBody);
-
-          // 3. Haptic feedback on mobile
+          // Haptic feedback on mobile (if SW didn't already trigger it)
           if (navigator.vibrate) {
             navigator.vibrate([200, 100, 200]);
           }
 
-          // 4. Sound
+          // Sound
           await playNotificationSound();
         }
 

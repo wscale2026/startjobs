@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from django.utils import timezone
 from .models import Conversation, Message, Review
 from .serializers import ConversationSerializer, MessageSerializer, ReviewSerializer
@@ -9,17 +9,22 @@ from .serializers import ConversationSerializer, MessageSerializer, ReviewSerial
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all().order_by('-updated_at')
     serializer_class = ConversationSerializer
-    permission_classes = [AllowAny]
+    # SECURITY: All conversation endpoints require authentication
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Conversation.objects.prefetch_related(
+        # SECURITY: Unauthenticated users see nothing.
+        # Authenticated users see ONLY conversations where they are an explicit participant.
+        if not self.request.user.is_authenticated:
+            return Conversation.objects.none()
+
+        return Conversation.objects.prefetch_related(
             'participants',
             'messages',
             'messages__sender'
-        ).all().order_by('-updated_at')
-        if self.request.user.is_authenticated:
-            queryset = queryset.filter(participants=self.request.user)
-        return queryset
+        ).filter(
+            participants=self.request.user
+        ).order_by('-updated_at')
 
     def create(self, request, *args, **kwargs):
         participant_ids = request.data.get('participants', [])
@@ -103,66 +108,81 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def broadcast(self, request):
-        if request.user.role not in ['admin', 'super_admin']:
+        """
+        SECURITY: Broadcast now sends INDIVIDUAL private conversations.
+        Each user sees ONLY their own conversation with the admin.
+        No shared conversations are created.
+        """
+        if not (request.user.is_staff or request.user.is_superuser or
+                request.user.role in ['admin', 'super_admin']):
             return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
-            
+
         target = request.data.get('target', 'all')
         text = request.data.get('text', '')
-        
+
         if not text:
             return Response({'error': 'Message text is required'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         from django.contrib.auth import get_user_model
         from django.db.models import Count
         User = get_user_model()
-        
-        users_qs = User.objects.exclude(id=request.user.id)
+
+        users_qs = User.objects.exclude(id=request.user.id).exclude(
+            is_superuser=True
+        ).exclude(is_staff=True)
         if target == 'candidates':
             users_qs = users_qs.filter(role='candidate')
         elif target == 'employers':
             users_qs = users_qs.filter(role='employer')
-            
+
         users_list = list(users_qs)
         created_count = 0
-        
+
         for user in users_list:
             final_text = text
             final_text = final_text.replace('{prenom}', user.first_name or '')
             final_text = final_text.replace('{nom}', user.last_name or '')
             final_text = final_text.replace('{nom_complet}', user.get_full_name() or user.username)
             final_text = final_text.replace('{email}', user.email or '')
-            
+
             phone = ''
             if hasattr(user, 'candidate_profile') and user.candidate_profile.phone:
                 phone = user.candidate_profile.phone
             elif hasattr(user, 'employer_profile') and user.employer_profile.phone:
                 phone = user.employer_profile.phone
-            elif hasattr(user, 'admin_profile') and user.admin_profile.phone:
-                phone = user.admin_profile.phone
             final_text = final_text.replace('{telephone}', phone)
-            
+
             if hasattr(user, 'candidate_profile'):
                 final_text = final_text.replace('{profil_type}', user.candidate_profile.profile_type or '')
             else:
                 final_text = final_text.replace('{profil_type}', '')
-                
+
             if hasattr(user, 'employer_profile'):
                 final_text = final_text.replace('{entreprise}', user.employer_profile.company_name or '')
             else:
                 final_text = final_text.replace('{entreprise}', '')
-                
-            convs = Conversation.objects.annotate(c=Count('participants')).filter(c=2, participants=request.user).filter(participants=user)
+
+            # SECURITY: Find or create a STRICT 1-to-1 conversation between admin and this user only.
+            # A conversation qualifies only if it has EXACTLY 2 participants: admin + user.
+            convs = Conversation.objects.annotate(
+                c=Count('participants')
+            ).filter(c=2).filter(participants=request.user).filter(participants=user)
+
             if convs.exists():
                 conv = convs.first()
+                # Re-add user if they had previously deleted it from their view
+                if user not in conv.participants.all():
+                    conv.participants.add(user)
             else:
                 conv = Conversation.objects.create()
-                conv.participants.set([request.user, user])
-                
+                # IMPORTANT: Set ONLY these 2 participants - no one else
+                conv.participants.set([request.user.id, user.id])
+
             Message.objects.create(conversation=conv, sender=request.user, text=final_text)
             conv.updated_at = timezone.now()
             conv.save()
             created_count += 1
-            
+
         return Response({'status': 'broadcast successful', 'count': created_count}, status=status.HTTP_200_OK)
 
 class ReviewViewSet(viewsets.ModelViewSet):
