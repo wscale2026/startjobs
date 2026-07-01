@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
-from users.views import UserViewSet, EmployerProfileViewSet, CandidateProfileViewSet, SkillViewSet, LanguageViewSet, ExperienceViewSet, RegisterView, UserMeView, UserProfileView, PublicSettingsView, CustomTokenObtainPairView, VerifyEmailView, ResendVerificationView, search_contacts, SubmitKycView
+from users.views import UserViewSet, EmployerProfileViewSet, CandidateProfileViewSet, SkillViewSet, LanguageViewSet, ExperienceViewSet, RegisterView, UserMeView, UserProfileView, PublicSettingsView, CustomTokenObtainPairView, VerifyEmailView, ResendVerificationView, search_contacts, SubmitKycView, SupportTicketView
 from users.password_views import PasswordResetRequestView, PasswordResetConfirmView
 from users.admin_views import AdminDashboardView, AdminMailingView, AdminSettingsView, AdminSendCredentialsView, AdminUpdateUserView
 from jobs.views import SectorViewSet, NeighborhoodViewSet, JobOfferViewSet, ApplicationViewSet
@@ -68,6 +68,7 @@ urlpatterns = [
     path('api/admin/send-credentials/', AdminSendCredentialsView.as_view(), name='admin_send_credentials'),
     path('api/admin/update-user/<uuid:user_id>/', AdminUpdateUserView.as_view(), name='admin_update_user'),
     path('api/public-settings/', PublicSettingsView.as_view(), name='public_settings'),
+    path('api/support-ticket/', SupportTicketView.as_view(), name='support_ticket'),
     path('api/', include(router.urls)),
 ]
 

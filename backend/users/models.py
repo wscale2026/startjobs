@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 import uuid
 import secrets
@@ -75,7 +76,13 @@ class EmployerProfile(models.Model):
     
     # KYC Fields
     kyc_status = models.CharField(max_length=20, choices=KYC_STATUS_CHOICES, default='unverified')
-    kyc_document = models.FileField(upload_to='employers/kyc/', blank=True, null=True)
+    kyc_method = models.CharField(max_length=20, blank=True, null=True, help_text="cni, recepisse, passport, or none for entreprise")
+    kyc_selfie = models.FileField(upload_to='employers/kyc/selfies/', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
+    kyc_cni_recto = models.FileField(upload_to='employers/kyc/cni/', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
+    kyc_cni_verso = models.FileField(upload_to='employers/kyc/cni/', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
+    kyc_passport_recepisse = models.FileField(upload_to='employers/kyc/passport/', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
+    kyc_attestation_fiscale = models.FileField(upload_to='employers/kyc/entreprise/', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
+    kyc_attestation_immatriculation = models.FileField(upload_to='employers/kyc/entreprise/', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
     kyc_rejection_reason = models.TextField(blank=True, null=True)
     
     generated_password = models.CharField(max_length=128, blank=True, null=True, help_text="Temporary password generated for admin view")

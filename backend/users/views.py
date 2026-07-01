@@ -85,20 +85,21 @@ class RegisterView(generics.CreateAPIView):
         
         response = super().create(request, *args, **kwargs)
         
+        import threading
+        
         if s.require_email_verification:
             user = User.objects.get(username=response.data.get('username'))
-            send_verification_email(user, s)
+            threading.Thread(target=send_verification_email, args=(user, s)).start()
         else:
             user = User.objects.get(username=response.data.get('username'))
-            send_welcome_email(user, s)
+            threading.Thread(target=send_welcome_email, args=(user, s)).start()
         
         # Notify admins if the setting is enabled
         user = User.objects.get(username=response.data.get('username'))
         if user.role == 'candidate':
             if s.notify_admins_on_registration:
-                notify_admins_new_registration(user, s)
+                threading.Thread(target=notify_admins_new_registration, args=(user, s)).start()
                 
-            # Welcome message for candidates
             admin_user = User.objects.filter(is_superuser=True).first()
             if admin_user:
                 from interactions.models import Conversation, Message
@@ -123,8 +124,35 @@ L'équipe StartJobs."""
                     text=welcome_text
                 )
                 
-        elif user.role == 'employer' and s.notify_admins_on_employer_registration:
-            notify_admins_new_registration(user, s)
+        elif user.role == 'employer':
+            if s.notify_admins_on_employer_registration:
+                threading.Thread(target=notify_admins_new_registration, args=(user, s)).start()
+                
+            admin_user = User.objects.filter(is_superuser=True).first()
+            if admin_user:
+                from interactions.models import Conversation, Message
+                conv = Conversation.objects.create()
+                conv.participants.add(admin_user, user)
+                
+                welcome_text = f"""Bonjour {user.first_name or user.username} 👋,
+
+Bienvenue sur StartJobs ! Nous sommes très heureux de vous compter parmi nos employeurs.
+
+Votre compte est désormais actif.
+Vous pouvez dès à présent publier vos offres d'emploi, parcourir les profils des candidats locaux et communiquer avec eux.
+
+Afin de garantir la sécurité et la fiabilité de notre plateforme pour tous nos utilisateurs, nous vous invitons à soumettre vos documents d'identité pour la vérification de votre compte.
+
+👉 Pour cela, veuillez vous rendre sur votre tableau de bord employeur et cliquer sur le bouton de soumission des documents.
+
+Si vous avez la moindre question, n'hésitez pas à répondre directement à ce message.
+
+L'équipe StartJobs."""
+                Message.objects.create(
+                    conversation=conv,
+                    sender=admin_user,
+                    text=welcome_text
+                )
                 
         return response
 
@@ -472,7 +500,8 @@ class ResendVerificationView(APIView):
         from .models import SiteSettings
         s = SiteSettings.get_settings()
         
-        send_verification_email(user, s)
+        import threading
+        threading.Thread(target=send_verification_email, args=(user, s)).start()
         
         return Response({'detail': 'Un nouveau lien de vérification a été envoyé à votre adresse email.'}, status=drf_status.HTTP_200_OK)
 
@@ -530,12 +559,32 @@ class SubmitKycView(APIView):
             
         profile = request.user.employer_profile
         
-        if 'kyc_document' not in request.FILES:
-            return Response({'error': 'Veuillez fournir un document.'}, status=400)
-            
-        profile.kyc_document = request.FILES['kyc_document']
-        profile.employer_type = request.data.get('employer_type', 'particulier')
+        employer_type = request.data.get('employer_type', 'particulier')
+        profile.employer_type = employer_type
+        
+        if employer_type == 'particulier':
+            profile.kyc_method = request.data.get('kyc_method', '')
+            if 'kyc_selfie' in request.FILES:
+                profile.kyc_selfie = request.FILES['kyc_selfie']
+            if 'kyc_cni_recto' in request.FILES:
+                profile.kyc_cni_recto = request.FILES['kyc_cni_recto']
+            if 'kyc_cni_verso' in request.FILES:
+                profile.kyc_cni_verso = request.FILES['kyc_cni_verso']
+            if 'kyc_passport_recepisse' in request.FILES:
+                profile.kyc_passport_recepisse = request.FILES['kyc_passport_recepisse']
+        else:
+            profile.kyc_method = ''
+            if 'kyc_cni_recto' in request.FILES:
+                profile.kyc_cni_recto = request.FILES['kyc_cni_recto']
+            if 'kyc_cni_verso' in request.FILES:
+                profile.kyc_cni_verso = request.FILES['kyc_cni_verso']
+            if 'kyc_attestation_fiscale' in request.FILES:
+                profile.kyc_attestation_fiscale = request.FILES['kyc_attestation_fiscale']
+            if 'kyc_attestation_immatriculation' in request.FILES:
+                profile.kyc_attestation_immatriculation = request.FILES['kyc_attestation_immatriculation']
+                
         profile.kyc_status = 'pending'
+        profile.kyc_rejection_reason = ''
         profile.save()
         
         # Send email to admins
@@ -577,26 +626,56 @@ class SubmitKycView(APIView):
                 </body>
                 </html>
                 """
-                send_mail(
-                    subject=f"Nouvelle demande KYC - {request.user.first_name or request.user.username}",
-                    message=f"L'employeur {request.user.first_name or request.user.username} ({request.user.email}) a soumis des documents pour la vérification de son identité (KYC).\n\nVeuillez vous connecter au back-office pour examiner et approuver la demande.",
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=admin_emails,
-                    fail_silently=True,
-                    html_message=html_message
-                )
+                def send_kyc_email():
+                    send_mail(
+                        subject=f"Nouvelle demande KYC - {request.user.first_name or request.user.username}",
+                        message=f"L'employeur {request.user.first_name or request.user.username} ({request.user.email}) a soumis des documents pour la vérification de son identité (KYC).\n\nVeuillez vous connecter au back-office pour examiner et approuver la demande.",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=admin_emails,
+                        fail_silently=True,
+                        html_message=html_message
+                    )
+                import threading
+                threading.Thread(target=send_kyc_email).start()
         except Exception as e:
             print(f"Erreur d'envoi d'email aux admins pour KYC: {e}")
         
         return Response({'message': 'Documents KYC soumis avec succès.'})
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
+    
+    from backend.pagination import StandardResultsSetPagination
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         # Ne pas renvoyer le superadmin racine 'admin' pour des raisons de sécurité et d'UI
-        return User.objects.exclude(username='admin')
+        qs = User.objects.exclude(username='admin').order_by('-date_joined')
+        
+        # Filtering
+        role = self.request.query_params.get('role', None)
+        if role:
+            if role == 'admin':
+                qs = qs.filter(role__in=['admin', 'super_admin', 'moderator'])
+            else:
+                qs = qs.filter(role=role)
+                
+        # Searching
+        search = self.request.query_params.get('search', None)
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(employer_profile__company_name__icontains=search) |
+                Q(candidate_profile__phone__icontains=search) |
+                Q(employer_profile__phone__icontains=search)
+            ).distinct()
+            
+        return qs
 
 class EmployerProfileViewSet(viewsets.ModelViewSet):
     queryset = EmployerProfile.objects.all()
@@ -723,3 +802,45 @@ class PublicSettingsView(APIView):
             'seo_description': s.seo_description,
             'show_empty_offers_countdown': s.show_empty_offers_countdown,
         })
+
+class SupportTicketView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        message = request.data.get('message')
+        if not message:
+            return Response({'detail': 'Message vide.'}, status=drf_status.HTTP_400_BAD_REQUEST)
+            
+        user = request.user
+        user_info = "Visiteur anonyme (Non connecté)"
+        if user and user.is_authenticated:
+            user_info = f"Utilisateur: {user.get_full_name() or user.username}\nEmail: {user.email}\nRôle: {user.role}\nID: {user.id}"
+            
+        from .models import SiteSettings
+        s = SiteSettings.get_settings()
+        
+        # Get admin emails
+        admins = User.objects.filter(is_staff=True, email__isnull=False)
+        admin_emails = [a.email for a in admins if a.email]
+        
+        if not admin_emails:
+            admin_emails = [settings.DEFAULT_FROM_EMAIL]
+
+        from django.core.mail import send_mail
+        import threading
+        
+        def send_ticket():
+            try:
+                send_mail(
+                    subject=f"[{s.site_name}] Support Chat - Nouvelle demande en attente",
+                    message=f"Nouvelle demande d'assistance depuis le widget de chat :\n\n---\n{message}\n---\n\n{user_info}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=admin_emails,
+                    fail_silently=True
+                )
+            except Exception as e:
+                print(f"Erreur d'envoi d'email de support: {e}")
+                
+        threading.Thread(target=send_ticket).start()
+        
+        return Response({"status": "Ticket envoyé avec succès"})

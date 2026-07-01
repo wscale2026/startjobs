@@ -31,9 +31,24 @@ class JobOfferViewSet(viewsets.ModelViewSet):
     queryset = JobOffer.objects.all().order_by('-created_at')
     serializer_class = JobOfferSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrAdmin]
+    
+    from backend.pagination import StandardResultsSetPagination
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         queryset = JobOffer.objects.all().order_by('-created_at')
+        
+        # Searching for admin panel and API
+        search = self.request.query_params.get('search', None)
+        if search:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(employer__company_name__icontains=search) |
+                Q(location__icontains=search) |
+                Q(description__icontains=search) |
+                Q(sector__name__icontains=search)
+            ).distinct()
         my_offers = self.request.query_params.get('my_offers')
         is_ad = self.request.query_params.get('is_ad')
         

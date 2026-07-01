@@ -9,8 +9,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser', 'date_joined', 'candidate_profile', 'employer_profile', 'admin_profile')
-        read_only_fields = ('id', 'date_joined')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser', 'date_joined', 'last_login', 'candidate_profile', 'employer_profile', 'admin_profile')
+        read_only_fields = ('id', 'date_joined', 'last_login')
 
     def get_candidate_profile(self, obj):
         if hasattr(obj, 'candidate_profile'):
@@ -65,7 +65,13 @@ class UserSerializer(serializers.ModelSerializer):
                 'generated_password': getattr(obj.employer_profile, 'generated_password', ''),
                 'logo': obj.employer_profile.logo.url if obj.employer_profile.logo else None,
                 'kyc_status': getattr(obj.employer_profile, 'kyc_status', 'unverified'),
-                'kyc_document': obj.employer_profile.kyc_document.url if obj.employer_profile.kyc_document else None,
+                'kyc_method': getattr(obj.employer_profile, 'kyc_method', ''),
+                'kyc_selfie': obj.employer_profile.kyc_selfie.url if getattr(obj.employer_profile, 'kyc_selfie', None) else None,
+                'kyc_cni_recto': obj.employer_profile.kyc_cni_recto.url if getattr(obj.employer_profile, 'kyc_cni_recto', None) else None,
+                'kyc_cni_verso': obj.employer_profile.kyc_cni_verso.url if getattr(obj.employer_profile, 'kyc_cni_verso', None) else None,
+                'kyc_passport_recepisse': obj.employer_profile.kyc_passport_recepisse.url if getattr(obj.employer_profile, 'kyc_passport_recepisse', None) else None,
+                'kyc_attestation_fiscale': obj.employer_profile.kyc_attestation_fiscale.url if getattr(obj.employer_profile, 'kyc_attestation_fiscale', None) else None,
+                'kyc_attestation_immatriculation': obj.employer_profile.kyc_attestation_immatriculation.url if getattr(obj.employer_profile, 'kyc_attestation_immatriculation', None) else None,
                 'kyc_rejection_reason': getattr(obj.employer_profile, 'kyc_rejection_reason', ''),
                 'employer_type': getattr(obj.employer_profile, 'employer_type', 'particulier'),
             }
@@ -212,7 +218,7 @@ class EmployerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployerProfile
         fields = ('id', 'user', 'company_name', 'address', 'phone', 'verified', 'verification_requested', 'logo',
-                  'industry', 'city', 'neighborhood', 'latitude', 'longitude', 'recruits_per_month', 'description', 'score', 'kyc_status', 'kyc_document', 'employer_type', 'kyc_rejection_reason')
+                  'industry', 'city', 'neighborhood', 'latitude', 'longitude', 'recruits_per_month', 'description', 'score', 'kyc_status', 'kyc_method', 'kyc_selfie', 'kyc_cni_recto', 'kyc_cni_verso', 'kyc_passport_recepisse', 'kyc_attestation_fiscale', 'kyc_attestation_immatriculation', 'employer_type', 'kyc_rejection_reason')
 
     def get_score(self, obj):
         from interactions.models import Review

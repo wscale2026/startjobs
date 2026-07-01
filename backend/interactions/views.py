@@ -12,7 +12,11 @@ class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        queryset = Conversation.objects.all().order_by('-updated_at')
+        queryset = Conversation.objects.prefetch_related(
+            'participants',
+            'messages',
+            'messages__sender'
+        ).all().order_by('-updated_at')
         if self.request.user.is_authenticated:
             queryset = queryset.filter(participants=self.request.user)
         return queryset
